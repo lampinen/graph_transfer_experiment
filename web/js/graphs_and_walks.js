@@ -16,6 +16,11 @@ function range(start, end) {
     return result;
 }
 
+// handles negative numbers in a better way for my use
+function mod(n, m) {
+  return ((n % m) + m) % m;
+}
+
 // Graphs /////////////////////////////////////////////////////////////////////
 // Graphs are represented by an adjacency array of arrays, where each node's 
 // array contains the nodes it is adjacent to.
@@ -57,5 +62,40 @@ function three_rooms() {
 }
 
 
-//Lattice (from Kahn et al. 2018)
+//Lattice (from Kahn et al. 2018) -- 5 three-cliques in a ring
+function five_three_lattice() {
+    var num_nodes = 15;
+    this.name = "five_three_lattice";
+    this.nodes = range(num_nodes);
+    this.edges = [];
+    var this_clique;
+    var curr_index;
+    for (var i=0; i < 5; i++) {
+        this_clique = clique(3, 3*i);
+        // now ring adjacencies
+        for (var j=0; j < 3; j++){
+            curr_index = i*3 + j;
+            this_clique[j].push(mod(curr_index - 3, num_nodes))
+            this_clique[j].push(mod(curr_index + 3, num_nodes))
+        }
+        this.edges = this.edges.concat(this_clique);
+    }
+}
 
+//Ring (from Kahn et al. 2018) -- each node is connected to 4 nearest neighbors 
+function ring() {
+    var num_nodes = 15;
+    this.name = "ring_15";
+    this.nodes = range(num_nodes);
+    this.edges = [];
+    var curr_edges;
+    for (var i=0; i < num_nodes; i++) {
+        curr_edges = [
+            mod(i - 2, num_nodes),
+            mod(i - 1, num_nodes),
+            mod(i + 1, num_nodes),
+            mod(i + 2, num_nodes)
+        ];
+        this.edges.push(curr_edges);
+    }
+}
