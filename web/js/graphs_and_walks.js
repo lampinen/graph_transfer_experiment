@@ -38,7 +38,7 @@ function clique(n, start_index) {
 }
 
 
-//3 almost 5-cliques (structure of Schapiro et al.)
+// 3 almost 5-cliques (structure of Schapiro et al.)
 function three_rooms() {
     var num_nodes = 15;
     this.name = "three_rooms";
@@ -61,8 +61,7 @@ function three_rooms() {
     this.edges[10].push(9);
 }
 
-
-//Lattice (from Kahn et al. 2018) -- 5 three-cliques in a ring
+// Lattice (from Kahn et al. 2018) -- 5 three-cliques in a ring
 function five_three_lattice() {
     var num_nodes = 15;
     this.name = "five_three_lattice";
@@ -82,7 +81,7 @@ function five_three_lattice() {
     }
 }
 
-//Ring (from Kahn et al. 2018) -- each node is connected to 4 nearest neighbors 
+// Ring (from Kahn et al. 2018) -- each node is connected to 4 nearest neighbors 
 function ring() {
     var num_nodes = 15;
     this.name = "ring_15";
@@ -98,4 +97,24 @@ function ring() {
         ];
         this.edges.push(curr_edges);
     }
+}
+
+// random walks
+function random_walk(graph, length, start_location) {
+    var edges = graph.edges;
+    var num_nodes = edges.length;
+    var walk = [];
+    if (start_location === undefined) {
+        // random start
+        start_location = Math.floor(Math.random() * num_nodes); 
+    }
+    var curr_location = start_location 
+    var adjacent;
+    for (var t=0; t < length + 1; t++) {
+        walk.push(curr_location);
+        adjacent = edges[curr_location];
+        curr_location = adjacent[Math.floor(Math.random() * adjacent.length)];
+    }
+
+    return walk;
 }
