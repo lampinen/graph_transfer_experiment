@@ -37,6 +37,11 @@ function choice(a) {
     return a[Math.floor(Math.random() * a.length)];
 }
 
+// stolen from the internet, gets keycodes for letters regardless of case
+function char_to_keycode(character) {
+    return character.toUpperCase().charCodeAt(0);
+}
+
 //data/server communication
 function saveData(filename, filedata, callback, error_callback){
    $.ajax({

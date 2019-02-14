@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Key learning experiment</title>
+    <script src="js/jspsych-6.0.5/jspsych.js"></script>
+    <script src="js/jspsych-6.0.5/plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="js/etc.js"></script>
+    <script src="js/graphs_and_walks.js"></script>
+    <script src="js/plugins/graph-trial.js"></script>
+    <link href="js/jspsych-6.0.5/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+<body></body>
+<script>
+    var timeline = [];
+
+    var demo = {
+        type: "graph-trial",
+        trajectory: [0, 1, 2, 0],
+        trial_type: 'letter',
+        nodes_to_keys: ['B', 'C', 'D'],
+        preamble: 'Blah blah blah'
+    };
+    timeline.push(demo);
+
+    // start experiment
+    jsPsych.init({
+        timeline: timeline
+    });
+</script>
+</html>
