@@ -79,33 +79,69 @@ jsPsych.plugins['graph-trial'] = (function() {
         var draw = canvas.getContext("2d");
 
         // state and event handling variables
-        var keyable = false;
+//        var keyable = false;
         var current_node;
+        var current_start_time;
         var current_correct;
         var trajectory = trial.trajectory.slice();
         var nodes_to_keycodes;
+        var keys_for_combos = [32, 72, 74, 75, 76] // space, H, J, K, L 
+        var held_keys = {}; // Will indicate whether each of the above keys is
+                            // currently depressed
+
+        function reset_held_keys() {
+            for (var i = 0; i < keys_for_combos.length; i++) {
+                held_keys[keys_for_combos[i]] = false;
+            }
+        }
+
+        function check_key_combo(desired_combo) {
+            for (var i = 0; i < keys_for_combos.length; i++) {
+                if (desired_combo.includes(keys_for_combos[i])) {
+                    if (!held_keys[keys_for_combos[i]]) {
+                        console.log("failing on " + keys_for_combos[i])
+                        return false;
+                    }
+                } else {
+                    if (held_keys[keys_for_combos[i]]) {
+                        console.log("failing2 on " + keys_for_combos[i])
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
         if (trial.graph_trial_type === 'letter') {
             nodes_to_keycodes = trial.nodes_to_keys.map(x => char_to_keycode(x));
         } else if (trial.graph_trial_type === 'key_combination') {
             nodes_to_keycodes = trial.nodes_to_keys.map(x => x.map(k => char_to_keycode(k)));
+            reset_held_keys();
         }
 
         var keyboard_listener;
 
         // logging variables
         var keypresses = [];
-        var rts = [];
+        var keyups = [];
+        var keypress_rts = [];
+        var keyup_rts = [];
 
         function start_keyboard_listener() {
-            jsPsych.pluginAPI.cancelAllKeyboardResponses();
-            keyable = true;
-            keyboard_listener = jsPsych.pluginAPI.getKeyboardResponse({
-                callback_function: keyboard_callback,
-                valid_responses: jsPsych.ALL_KEYS,
-                rt_method: 'date',
-                persist: true,
-                allow_held_key: false
-            });
+//            jsPsych.pluginAPI.cancelAllKeyboardResponses();
+//            keyable = true;
+//            keyboard_listener = jsPsych.pluginAPI.getKeyboardResponse({
+//                callback_function: keyboard_callback,
+//                valid_responses: jsPsych.ALL_KEYS,
+//                rt_method: 'date',
+//                persist: true,
+//                allow_held_key: false
+//            });
+            reset_held_keys();
+            document.addEventListener('keydown', keydown_callback, false);
+            if (trial.graph_trial_type === ' key_combination') {
+                document.addEventListener('keyup', keyup_callback, false);
+            }
         }
 
         function draw_rounded_rectangle(x, y, width, height, r) {
@@ -208,11 +244,16 @@ jsPsych.plugins['graph-trial'] = (function() {
             display_node(current_node);
             current_correct = nodes_to_keycodes[current_node];
             keypresses.push([]);
-            rts.push([]);
+            current_start_time = (new Date()).getTime();
+            keypress_rts.push([]);
             start_keyboard_listener();
         }
 
         function end_trial() {
+            document.removeEventListener('keydown', keydown_callback, false);
+            if (trial.graph_trial_type === ' key_combination') {
+                document.removeEventListener('keyup', keyup_callback, false);
+            }
             var trial_data = {
                 "trajectory": trial.trajectory,
                 "graph_trial_type": trial.graph_trial_type,
@@ -220,30 +261,51 @@ jsPsych.plugins['graph-trial'] = (function() {
                 "canvas_width": trial.canvas_width,
                 "canvas_height": trial.canvas_height,
                 "keypresses": keypresses,
-                "rts": rts
-
+                "keypress_rts": keypress_rts
             };
             //console.log(trial_data);
-            jsPsych.pluginAPI.cancelAllKeyboardResponses();
             jsPsych.finishTrial(trial_data);
         }
 
-        function keyboard_callback(event_info) {
-            if (!keyable) {
-                return;
-            }
-            keyable = false;
-            keypresses[keypresses.length-1].push(event_info.key);
-            rts[keypresses.length-1].push(event_info.rt);
-
-            if (event_info.key === current_correct) {
-                advance_to_next();
-            } else {
-                display_node(current_node, true);
-                start_keyboard_listener();
+        function keydown_callback(event_info) {
+            var event_time = (new Date()).getTime();
+            keypresses[keypresses.length-1].push(event_info.keyCode);
+            keypress_rts[keypresses.length-1].push(event_time - current_start_time);
+            
+            if (trial.graph_trial_type === 'letter') { 
+                if (event_info.keyCode === current_correct) {
+                    advance_to_next();
+                } else {
+                    display_node(current_node, true);
+//                    start_keyboard_listener();
+                }
+            } else if (trial.graph_trial_type === 'key_combination') {
+                if (keys_for_combos.includes(event_info.keyCode)) {
+                    held_keys[event_info.keyCode] = true;
+                    console.log(held_keys)
+                    console.log(current_correct)
+                    if (check_key_combo(current_correct)) {
+                        advance_to_next();
+                    } else {
+                        display_node(current_node, true);
+                    }
+                }
             }
             return;
         }
+
+        function keyup_callback(event_info) {
+            var event_time = (new Date()).getTime();
+            keyups[keyups.length-1].push(event_info.keyCode);
+            keyup_rts[keypresses.length-1].push(event_time - current_start_time);
+            if (keys_for_combos.includes(event_info.keyCode)) {
+                held_keys[event_info.key] = false;
+                console.log(held_keys)
+            }
+
+            return;
+        }
+
         
         // Start with first node 
         advance_to_next();
