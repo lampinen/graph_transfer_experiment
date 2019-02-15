@@ -23,7 +23,7 @@ jsPsych.plugins['graph-trial'] = (function() {
                 type: jsPsych.plugins.parameterType.STRING,
                 pretty_name: 'GraphTrialType',
                 default: 'letter',
-                description: 'Type of trial (letter or key-combination).'
+                description: 'Type of trial (letter or key_combination).'
             },
             nodes_to_keys: {
                 type: jsPsych.plugins.parameterType.COMPLEX,
@@ -83,7 +83,13 @@ jsPsych.plugins['graph-trial'] = (function() {
         var current_node;
         var current_correct;
         var trajectory = trial.trajectory.slice();
-        var nodes_to_keycodes = trial.nodes_to_keys.map(x => char_to_keycode(x));
+        var nodes_to_keycodes;
+        if (trial.graph_trial_type === 'letter') {
+            nodes_to_keycodes = trial.nodes_to_keys.map(x => char_to_keycode(x));
+        } else if (trial.graph_trial_type === 'key_combination') {
+            nodes_to_keycodes = trial.nodes_to_keys.map(x => x.map(k => char_to_keycode(k)));
+        }
+
         var keyboard_listener;
 
         // logging variables
@@ -102,6 +108,77 @@ jsPsych.plugins['graph-trial'] = (function() {
             });
         }
 
+        function draw_rounded_rectangle(x, y, width, height, r) {
+            draw.beginPath();
+            draw.moveTo(x, y + r);
+            draw.arcTo(x, y, x + r, y, r);
+            draw.lineTo(x + width - r, y);
+            draw.arcTo(x + width, y, x + width, y + r, r);
+            draw.lineTo(x + width, y + height - r);
+            draw.arcTo(x + width, y + height, x + width - r, y + height, r);
+            draw.lineTo(x + r, y + height);
+            draw.arcTo(x, y + height, x, y + height - r, r);
+            draw.closePath()
+        }
+
+        function draw_letter_key(x, y, size, r, letter) {
+            draw_rounded_rectangle(x, y, size, size, r);
+            draw.stroke();
+            draw.fillText(letter, x + size/4, y + size/2);
+        }
+
+        var letter_key_size = 70;
+        var letter_key_r = 10;
+        var space_key_width = 300;
+        var letters = ["H", "J", "K", "L"];
+        var let_x_pos = [-1.5, -0.25, 1, 2.25];
+
+        function draw_keyboard(highlighted, highlight_color) {
+            if (highlighted === undefined) {
+                highlighted = [];
+            } 
+            if (highlight_color === undefined) {
+                highlight_color = "blue";
+            }
+            draw.lineWidth = 2;
+            draw.font = "40px Arial";
+            draw.textAlign = "center";
+            for (var i = 0; i < letters.length; i++) {
+                if (highlighted.includes(letters[i])) {
+                    draw.strokeStyle = highlight_color;
+                    draw.fillStyle = highlight_color;
+                } else {
+                    draw.strokeStyle = "black";
+                    draw.fillStyle = "black";
+                }
+                draw_letter_key(canvas.width/2 + let_x_pos[i] * letter_key_size,
+                                canvas.height/2 - 1.5 * letter_key_size,
+                                letter_key_size,
+                                letter_key_r,
+                                letters[i]);
+            }
+
+            // space
+            if (highlighted.includes(' ')) {
+                draw.strokeStyle = highlight_color;
+                draw.fillStyle = highlight_color;
+            } else {
+                draw.strokeStyle = "black";
+                draw.fillStyle = "black";
+            }
+            draw_rounded_rectangle(canvas.width/3 - 0.5 * space_key_width,
+                                   canvas.height/2 + 0.5 * letter_key_size,
+                                   space_key_width,
+                                   letter_key_size,
+                                   letter_key_r);
+            draw.stroke();
+            draw.fillText("space", 
+                          canvas.width/3,
+                          canvas.height/2 + letter_key_size);
+
+
+        }
+
         function display_node(node_index, incorrect) {
             if (trial.graph_trial_type === 'letter') {
                 draw.clearRect(0, 0, canvas.width, canvas.height);
@@ -113,6 +190,10 @@ jsPsych.plugins['graph-trial'] = (function() {
                 }
                 draw.font = "40px Arial";
                 draw.fillText(trial.nodes_to_keys[node_index], canvas.width/2, canvas.height/2);
+            } else if (trial.graph_trial_type === 'key_combination') {
+                draw.clearRect(0, 0, canvas.width, canvas.height);
+                draw_keyboard(trial.nodes_to_keys[node_index],
+                              incorrect ? "red" : "blue");
             } else {
                 throw "Unknown trial type!";
             }

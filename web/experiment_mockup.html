@@ -13,10 +13,19 @@
 <script>
     var timeline = [];
 
+    var demo_key_combo = {
+        type: "graph-trial",
+        trajectory: [0, 1, 2, 0],
+        graph_trial_type: 'key_combination',
+        nodes_to_keys: [['L', 'H'], [' ', 'L'], ['K']],
+        preamble: 'Blah blah blah'
+    };
+    timeline.push(demo_key_combo);
+
     var demo = {
         type: "graph-trial",
         trajectory: [0, 1, 2, 0],
-        trial_type: 'letter',
+        graph_trial_type: 'letter',
         nodes_to_keys: ['B', 'C', 'D'],
         preamble: 'Blah blah blah'
     };
