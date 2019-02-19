@@ -118,3 +118,32 @@ function random_walk(graph, length, start_location) {
 
     return walk;
 }
+
+// epsilon of the time, takes a uniform random transition
+function noisy_random_walk(graph, length, epsilon, start_location) { 
+    var edges = graph.edges;
+    var num_nodes = edges.length;
+    var walk = [];
+    if (start_location === undefined) {
+        // random start
+        start_location = Math.floor(Math.random() * num_nodes); 
+    }
+    var curr_location = start_location 
+    var proposed_location;
+    var adjacent;
+    for (var t=0; t < length + 1; t++) {
+        walk.push(curr_location);
+        if (Math.random() < epsilon) {
+            proposed_location = Math.floor(Math.random() * (num_nodes-1));
+            if (proposed_location == curr_location) {
+                proposed_location = num_nodes - 1;
+            }
+            curr_location = proposed_location;
+        } else {
+            adjacent = edges[curr_location];
+            curr_location = adjacent[Math.floor(Math.random() * adjacent.length)];
+        }
+    }
+
+    return walk;
+}

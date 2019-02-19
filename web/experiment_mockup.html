@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Key learning experiment</title>
+    <title>Key press learning experiment</title>
     <script src="js/jspsych-6.0.5/jspsych.js"></script>
     <script src="js/jspsych-6.0.5/plugins/jspsych-html-keyboard-response.js"></script>
     <script src="js/etc.js"></script>
@@ -11,25 +11,50 @@
 </head>
 <body></body>
 <script>
+
+    var trial_type_a = 'key_combination'; 
+    var trial_type_b = 'letter'; 
+    var structure_a = new three_rooms();
+    var structure_b = new ring();
+    var epsilon = 0.1; // random transition probability
+    var walk_length = 5;
+
+    var walk_a = noisy_random_walk(structure_a, walk_length, epsilon, 0); 
+    var walk_b = noisy_random_walk(structure_b, walk_length, epsilon, 0); 
+
+    var key_assignments = [
+        'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R',
+        'S', 'T', 'V', 'W', 'X', 'Y', 'Z'
+    ];
+    shuffle(key_assignments);
+    key_assignments = key_assignments.slice(0, structure_a.num_nodes);
+    var key_combo_assignments = [
+        [' '], ['H'], ['J'], ['K'], ['L'], [' ', 'H'], [' ', 'J'], [' ', 'K'], 
+        [' ', 'L'],  ['H', 'J'], ['H', 'K'], ['H', 'L'], ['J', 'K'],
+        ['J', 'L'], ['K', 'L']
+    ];
+    shuffle(key_combo_assignments);
+    key_combo_assignments = key_combo_assignments.slice(0, structure_a.num_nodes);
+
     var timeline = [];
 
-    var demo_key_combo = {
+    var demo_a = {
         type: "graph-trial",
-        trajectory: [0, 1, 2, 0],
-        graph_trial_type: 'key_combination',
-        nodes_to_keys: [['L', 'H'], [' ', 'L'], ['K']],
+        trajectory: walk_a,
+        graph_trial_type: trial_type_a,
+        nodes_to_keys: trial_type_a == 'letter' ? key_assignments : key_combo_assignments,
         preamble: 'Blah blah blah'
     };
-    timeline.push(demo_key_combo);
+    timeline.push(demo_a);
 
-    var demo = {
+    var demo_b = {
         type: "graph-trial",
-        trajectory: [0, 1, 2, 0],
-        graph_trial_type: 'letter',
-        nodes_to_keys: ['B', 'C', 'D'],
+        trajectory: walk_b,
+        graph_trial_type: trial_type_b,
+        nodes_to_keys: trial_type_b == 'letter' ? key_assignments : key_combo_assignments,
         preamble: 'Blah blah blah'
     };
-    timeline.push(demo);
+    timeline.push(demo_b);
 
     // start experiment
     jsPsych.init({
