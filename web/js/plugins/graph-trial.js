@@ -25,6 +25,12 @@ jsPsych.plugins['graph-trial'] = (function() {
                 default: 'letter',
                 description: 'Type of trial (letter or key_combination).'
             },
+            keyboard_type: {
+                type: jsPsych.plugins.parameterType.STRING,
+                pretty_name: 'KeyboardType',
+                default: 'abstract',
+                description: 'Type of keyboard shown for combos (grounded or abstract).'
+            },
             nodes_to_keys: {
                 type: jsPsych.plugins.parameterType.COMPLEX,
                 array: true,
@@ -120,6 +126,7 @@ jsPsych.plugins['graph-trial'] = (function() {
         }
 
         var keyboard_listener;
+        var keyable = false;
 
         // logging variables
         var keypresses = [];
@@ -139,9 +146,10 @@ jsPsych.plugins['graph-trial'] = (function() {
 //            });
             reset_held_keys();
             document.addEventListener('keydown', keydown_callback, false);
-            if (trial.graph_trial_type === ' key_combination') {
+            if (trial.graph_trial_type === 'key_combination') {
                 document.addEventListener('keyup', keyup_callback, false);
             }
+            keyable = true;
         }
 
         function draw_rounded_rectangle(x, y, width, height, r) {
@@ -166,8 +174,16 @@ jsPsych.plugins['graph-trial'] = (function() {
         var letter_key_size = 70;
         var letter_key_r = 10;
         var space_key_width = 300;
-        var letters = ["H", "J", "K", "L"];
-        var let_x_pos = [-1.5, -0.25, 1, 2.25];
+        var letters;
+        var let_x_pos;
+        
+        if (trial.keyboard_type == "grounded") {
+            letters = ["H", "J", "K", "L"];
+            let_x_pos= [-1.5, -0.25, 1, 2.25];
+        } else { //abstract
+            letters = [" ", "H", "J", "K", "L"];
+            let_x_pos= [-3, -1.75, -0.5, 0.75, 2];
+        }
 
         function draw_keyboard(highlighted, highlight_color) {
             if (highlighted === undefined) {
@@ -187,30 +203,33 @@ jsPsych.plugins['graph-trial'] = (function() {
                     draw.strokeStyle = "black";
                     draw.fillStyle = "black";
                 }
-                draw_letter_key(canvas.width/2 + let_x_pos[i] * letter_key_size,
+                draw_letter_key(canvas.width/2 + (let_x_pos[i]) * letter_key_size,
                                 canvas.height/2 - 1.5 * letter_key_size,
                                 letter_key_size,
                                 letter_key_r,
-                                letters[i]);
+                                trial.keyboard_type == "grounded" ? letters[i] : "");
             }
 
             // space
-            if (highlighted.includes(' ')) {
-                draw.strokeStyle = highlight_color;
-                draw.fillStyle = highlight_color;
-            } else {
-                draw.strokeStyle = "black";
-                draw.fillStyle = "black";
+            if (trial.keyboard_type == "grounded") {
+                if (highlighted.includes(' ')) {
+                    draw.strokeStyle = highlight_color;
+                    draw.fillStyle = highlight_color;
+                } else {
+                    draw.strokeStyle = "black";
+                    draw.fillStyle = "black";
+                }
+
+                draw_rounded_rectangle(canvas.width/3 - 0.5 * space_key_width,
+                                       canvas.height/2 + 0.5 * letter_key_size,
+                                       space_key_width,
+                                       letter_key_size,
+                                       letter_key_r);
+                draw.stroke();
+                draw.fillText("space", 
+                              canvas.width/3,
+                              canvas.height/2 + letter_key_size);
             }
-            draw_rounded_rectangle(canvas.width/3 - 0.5 * space_key_width,
-                                   canvas.height/2 + 0.5 * letter_key_size,
-                                   space_key_width,
-                                   letter_key_size,
-                                   letter_key_r);
-            draw.stroke();
-            draw.fillText("space", 
-                          canvas.width/3,
-                          canvas.height/2 + letter_key_size);
 
 
         }
@@ -236,6 +255,7 @@ jsPsych.plugins['graph-trial'] = (function() {
         }
 
         function advance_to_next() {
+            console.log("Advancing")
             if (trajectory.length == 0) {
                 end_trial();
                 return;
@@ -243,15 +263,17 @@ jsPsych.plugins['graph-trial'] = (function() {
             current_node = trajectory.shift();
             display_node(current_node);
             current_correct = nodes_to_keycodes[current_node];
-            keypresses.push([]);
             current_start_time = (new Date()).getTime();
+            keypresses.push([]);
             keypress_rts.push([]);
-            start_keyboard_listener();
+            keyups.push([]);
+            keyup_rts.push([]);
+            reset_held_keys();
         }
 
         function end_trial() {
             document.removeEventListener('keydown', keydown_callback, false);
-            if (trial.graph_trial_type === ' key_combination') {
+            if (trial.graph_trial_type === 'key_combination') {
                 document.removeEventListener('keyup', keyup_callback, false);
             }
             var trial_data = {
@@ -261,13 +283,18 @@ jsPsych.plugins['graph-trial'] = (function() {
                 "canvas_width": trial.canvas_width,
                 "canvas_height": trial.canvas_height,
                 "keypresses": keypresses,
-                "keypress_rts": keypress_rts
+                "keypress_rts": keypress_rts,
+                "keyups": keyups,
+                "keyup_rts": keyup_rts
             };
             //console.log(trial_data);
             jsPsych.finishTrial(trial_data);
         }
 
         function keydown_callback(event_info) {
+            if (!keyable) {
+                return;
+            }
             var event_time = (new Date()).getTime();
             keypresses[keypresses.length-1].push(event_info.keyCode);
             keypress_rts[keypresses.length-1].push(event_time - current_start_time);
@@ -282,8 +309,6 @@ jsPsych.plugins['graph-trial'] = (function() {
             } else if (trial.graph_trial_type === 'key_combination') {
                 if (keys_for_combos.includes(event_info.keyCode)) {
                     held_keys[event_info.keyCode] = true;
-                    console.log(held_keys)
-                    console.log(current_correct)
                     if (check_key_combo(current_correct)) {
                         advance_to_next();
                     } else {
@@ -295,12 +320,14 @@ jsPsych.plugins['graph-trial'] = (function() {
         }
 
         function keyup_callback(event_info) {
+            if (!keyable) {
+                return;
+            }
             var event_time = (new Date()).getTime();
             keyups[keyups.length-1].push(event_info.keyCode);
-            keyup_rts[keypresses.length-1].push(event_time - current_start_time);
+            keyup_rts[keyup_rts.length-1].push(event_time - current_start_time);
             if (keys_for_combos.includes(event_info.keyCode)) {
-                held_keys[event_info.key] = false;
-                console.log(held_keys)
+                held_keys[event_info.keyCode] = false;
             }
 
             return;
@@ -309,6 +336,7 @@ jsPsych.plugins['graph-trial'] = (function() {
         
         // Start with first node 
         advance_to_next();
+        start_keyboard_listener();
     };
 
     return plugin;
