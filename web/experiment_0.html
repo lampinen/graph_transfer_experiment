@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Key press learning experiment</title>
+    <script src="js/jspsych-6.0.5/jspsych.js"></script>
+    <script src="js/jspsych-6.0.5/plugins/jspsych-html-keyboard-response.js"></script>
+    <script src="js/etc.js"></script>
+    <script src="js/graphs_and_walks.js"></script>
+    <script src="js/plugins/graph-trial.js"></script>
+    <script src="js/build_experiment.js"></script>
+    <link href="js/jspsych-6.0.5/css/jspsych.css" rel="stylesheet" type="text/css"></link>
+</head>
+<body></body>
+<script>
+    var structure_a = new three_rooms();
+    var structure_b = new ring();
+
+    build_experiment(structure_a, structure_b);
+</script>
+</html>
