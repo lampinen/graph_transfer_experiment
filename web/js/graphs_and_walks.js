@@ -99,6 +99,57 @@ function ring() {
     }
 }
 
+// Random graph generation with degree > 2 for all nodes
+// Note this doesn't check num_edges for validity relative to degree constraint 
+function random_graph(num_nodes, num_edges) {
+    if (num_nodes === undefined) {
+        num_nodes = 15;
+    }
+    if (num_edges === undefined) {
+        num_edges = 30;
+    }
+    var min_deg = 2;
+    this.name = "random_nodes_" + num_nodes + "_edges_" + num_edges;
+    this.nodes = range(num_nodes);
+    this.edges = [];
+    for (var i=0; i < num_nodes; i++) {
+        this.edges.push([]);
+    }
+
+    var proposed_location;
+    var num_edges_here;
+    var num_curr_edges = 0;
+    var order = range(num_nodes); // Order of edge adding
+    shuffle(order);
+    var i;
+    for (var ii=0; ii < num_nodes; ii++) {
+        i = order[ii]; 
+        num_edges_here = this.edges[i].length;
+        for (var j=0; j < 2-num_edges_here; j++) {
+            proposed_location = Math.floor(Math.random() * (num_nodes-1));
+            if (proposed_location == i) {
+                proposed_location = num_nodes - 1;
+            }
+            this.edges[i].push(proposed_location);
+            this.edges[proposed_location].push(proposed_location);
+            num_curr_edges++;
+        }
+    }
+
+    while (num_curr_edges < num_edges) {
+        // add a uniform random edge
+        i = Math.floor(Math.random() * num_nodes);
+        proposed_location = Math.floor(Math.random() * (num_nodes-1));
+        if (proposed_location == i) {
+            proposed_location = num_nodes - 1;
+        }
+        this.edges[i].push(proposed_location);
+        this.edges[proposed_location].push(proposed_location);
+        num_curr_edges++;
+    }
+}
+
+
 // random walks
 function random_walk(graph, length, start_location) {
     var edges = graph.edges;
