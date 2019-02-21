@@ -24,7 +24,11 @@ console.log(rng.edges);
 var rand = new random_graph();
 console.log(rand.name);
 console.log(rand.edges);
+console.log(JSON.stringify(rand.edges));
 console.log(rand.edges.map(x => x.length).reduce(function (sum, val) {return sum + val;}))
+var fixrand = new fixed_random_graph();
+console.log(fixrand.name);
+console.log(fixrand.edges);
 console.log("Walks:")
 console.log(random_walk(tr, 50, 0));
 console.log(random_walk(rng, 50));

@@ -124,15 +124,16 @@ function random_graph(num_nodes, num_edges) {
     var i;
     for (var ii=0; ii < num_nodes; ii++) {
         i = order[ii]; 
-        num_edges_here = this.edges[i].length;
-        for (var j=0; j < 2-num_edges_here; j++) {
+        while (this.edges[i].length < 2) {
             proposed_location = Math.floor(Math.random() * (num_nodes-1));
             if (proposed_location == i) {
                 proposed_location = num_nodes - 1;
             }
-            this.edges[i].push(proposed_location);
-            this.edges[proposed_location].push(proposed_location);
-            num_curr_edges++;
+            if (!this.edges[i].includes(proposed_location)) {
+                this.edges[i].push(proposed_location);
+                this.edges[proposed_location].push(i);
+                num_curr_edges++;
+            }
         }
     }
 
@@ -143,10 +144,36 @@ function random_graph(num_nodes, num_edges) {
         if (proposed_location == i) {
             proposed_location = num_nodes - 1;
         }
-        this.edges[i].push(proposed_location);
-        this.edges[proposed_location].push(proposed_location);
-        num_curr_edges++;
+        if (!this.edges[i].includes(proposed_location)) {
+            this.edges[i].push(proposed_location);
+            this.edges[proposed_location].push(i);
+            num_curr_edges++;
+        }
     }
+}
+
+// A fixed graph generated using the above function
+// so we can have consistent results across subjects
+function fixed_random_graph() {
+    this.name = "fixed_random_graph_0";
+    this.nodes = range(15);
+    this.edges = [
+        [2,4,14,13],
+        [5,7],
+        [11,0,14,3],
+        [9,11,2],
+        [6,0,8],
+        [14,1,6],
+        [4,12,5,13,14,10],
+        [12,1,13,10],
+        [11,10,13,4],
+        [14,12,3],
+        [8,12,7,6],
+        [2,14,8,3],
+        [6,7,9,10,13],
+        [12,7,8,6,0],
+        [11,5,9,0,2,6]
+    ];
 }
 
 
