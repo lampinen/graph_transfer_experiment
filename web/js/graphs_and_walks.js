@@ -9,8 +9,12 @@ function range(start, end) {
         end = start;
         start = 0;
     }
+    if (start === end) {
+        return [];
+    }
     var result = [];
     for (var i = start; i < end; i++) { 
+        console.log(i);
         result.push(i);
     }
     return result;
@@ -48,8 +52,10 @@ function three_rooms() {
     // rooms/almost cliques
     for (var i=0; i < 3; i++) {
         this_clique = clique(5, 5*i);
+        console.log(this_clique);
         this_clique[0].pop(); // no edge between entry nodes
         this_clique[4].shift(); // no edge between entry nodes
+
         this.edges = this.edges.concat(this_clique);
     }
     // room adjacencies
@@ -176,6 +182,42 @@ function fixed_random_graph() {
     ];
 }
 
+// Visualizing graphs -- arguments are a canvas 2d context, a graph, and
+// center coordinates
+function draw_graph(draw, graph, cent_x, cent_y, radius) {
+    var num_nodes = graph.nodes.length;
+    var nodes = [];
+    var coords = get_polygon_coords(num_nodes, cent_x, cent_y, radius);
+
+    //aesthetics 
+    var node_r = 8;
+    draw.fillStyle = "black";
+    draw.strokeStyle = "black";
+    draw.linewidth = 4;
+    console.log(num_nodes);
+    for (var i=0; i < num_nodes; i++) {
+        // node 
+        draw.beginPath();
+        draw.arc(coords[i][0], coords[i][1], node_r, 0, 2*Math.PI); 
+        draw.closePath();
+        draw.fill();
+
+        //edges
+//        alert(JSON.stringify(graph.edges[i]))
+        var start, end;
+        for (var j=0; j < graph.edges[i].length; j++) {
+            if (graph.edges[i][j] < i) {
+                continue // no need to draw edges twice
+            }
+            draw.beginPath();
+            start = coords[i];
+            end = coords[graph.edges[i][j]];
+            draw.moveTo(start[0], start[1]);
+            draw.lineTo(end[0], end[1]);
+            draw.stroke();
+        }
+    }
+}
 
 // random walks
 function random_walk(graph, length, start_location) {

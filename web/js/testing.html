@@ -15,6 +15,7 @@ console.log("Graphs:")
 var tr = new three_rooms();
 console.log(tr.name);
 console.log(tr.edges);
+blablahlasdfjkls()
 var ftl = new five_three_lattice();
 console.log(ftl.name);
 console.log(ftl.edges);
@@ -32,7 +33,19 @@ console.log(fixrand.edges);
 console.log("Walks:")
 console.log(random_walk(tr, 50, 0));
 console.log(random_walk(rng, 50));
+
 </script>
 </head>
 <body>
+<canvas id='graph-draw-canvas' class='graph-draw-canvas' style="border:1px solid #000000;" width=1000 height=1000></canvas>
+<canvas id='graph2-draw-canvas' class='graph2-draw-canvas' style="border:1px solid #000000;" width=1000 height=1000></canvas>
 </body>
+<script>
+var canvas = document.getElementById('graph-draw-canvas');
+var draw = canvas.getContext("2d");
+draw_graph(draw, tr, 500, 500, 400);
+var canvas = document.getElementById('graph2-draw-canvas');
+var draw = canvas.getContext("2d");
+draw_graph(draw, new fixed_random_graph(), 500, 500, 400);
+</script>
+</html>
