@@ -14,7 +14,6 @@ function range(start, end) {
     }
     var result = [];
     for (var i = start; i < end; i++) { 
-        console.log(i);
         result.push(i);
     }
     return result;
@@ -52,7 +51,6 @@ function three_rooms() {
     // rooms/almost cliques
     for (var i=0; i < 3; i++) {
         this_clique = clique(5, 5*i);
-        console.log(this_clique);
         this_clique[0].pop(); // no edge between entry nodes
         this_clique[4].shift(); // no edge between entry nodes
 
@@ -194,7 +192,7 @@ function draw_graph(draw, graph, cent_x, cent_y, radius) {
     draw.fillStyle = "black";
     draw.strokeStyle = "black";
     draw.linewidth = 4;
-    console.log(num_nodes);
+    //console.log(num_nodes);
     for (var i=0; i < num_nodes; i++) {
         // node 
         draw.beginPath();

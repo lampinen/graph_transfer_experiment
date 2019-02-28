@@ -55,6 +55,13 @@ jsPsych.plugins['graph-trial'] = (function() {
                 pretty_name: 'Preamble',
                 default: null,
                 description: 'String to display at top of the page.'
+            },
+            instructions: {
+                type: jsPsych.plugins.parameterType.STRING,
+                pretty_name: 'Instructions',
+                array: true,
+                default: null,
+                description: 'Array of strings to show on each trial.'
             }
         }
     }
@@ -87,6 +94,7 @@ jsPsych.plugins['graph-trial'] = (function() {
         // state and event handling variables
 //        var keyable = false;
         var current_node;
+        var current_instructions;
         var current_start_time;
         var current_correct;
         var trajectory = trial.trajectory.slice();
@@ -105,12 +113,12 @@ jsPsych.plugins['graph-trial'] = (function() {
             for (var i = 0; i < keys_for_combos.length; i++) {
                 if (desired_combo.includes(keys_for_combos[i])) {
                     if (!held_keys[keys_for_combos[i]]) {
-                        console.log("failing on " + keys_for_combos[i])
+                        //console.log("failing on " + keys_for_combos[i])
                         return false;
                     }
                 } else {
                     if (held_keys[keys_for_combos[i]]) {
-                        console.log("failing2 on " + keys_for_combos[i])
+                        //console.log("failing2 on " + keys_for_combos[i])
                         return false;
                     }
                 }
@@ -176,13 +184,16 @@ jsPsych.plugins['graph-trial'] = (function() {
         var space_key_width = 300;
         var letters;
         var let_x_pos;
+        var key_y_offset;
         
         if (trial.keyboard_type == "grounded") {
             letters = ["H", "J", "K", "L"];
             let_x_pos= [-1.5, -0.25, 1, 2.25];
+            key_y_offset = 1.5 * letter_key_size;
         } else { //abstract
             letters = [" ", "H", "J", "K", "L"];
             let_x_pos= [-3, -1.75, -0.5, 0.75, 2];
+            key_y_offset = 0.5 * letter_key_size;
         }
 
         function draw_keyboard(highlighted, highlight_color) {
@@ -204,7 +215,7 @@ jsPsych.plugins['graph-trial'] = (function() {
                     draw.fillStyle = "black";
                 }
                 draw_letter_key(canvas.width/2 + (let_x_pos[i]) * letter_key_size,
-                                canvas.height/2 - 1.5 * letter_key_size,
+                                canvas.height/2 - key_y_offset,
                                 letter_key_size,
                                 letter_key_r,
                                 trial.keyboard_type == "grounded" ? letters[i] : "");
@@ -230,6 +241,8 @@ jsPsych.plugins['graph-trial'] = (function() {
                               canvas.width/3,
                               canvas.height/2 + letter_key_size);
             }
+            draw.strokeStyle = "black";
+            draw.fillStyle = "black";
 
 
         }
@@ -254,14 +267,24 @@ jsPsych.plugins['graph-trial'] = (function() {
             }
         }
 
+        function display_instructions(instruction) {
+            draw.font = "30px Arial";
+            draw.fillStyle = "black";
+            draw.fillText(instruction, canvas.width/2, 40);
+        }
+
         function advance_to_next() {
-            console.log("Advancing")
+            //console.log("Advancing")
             if (trajectory.length == 0) {
                 end_trial();
                 return;
             }
             current_node = trajectory.shift();
             display_node(current_node);
+            if (trial.instructions !== null) {
+                current_instructions = trial.instructions.shift();
+                display_instructions(current_instructions);
+            }
             current_correct = nodes_to_keycodes[current_node];
             current_start_time = (new Date()).getTime();
             keypresses.push([]);
@@ -304,6 +327,9 @@ jsPsych.plugins['graph-trial'] = (function() {
                     advance_to_next();
                 } else {
                     display_node(current_node, true);
+                    if (trial.instructions !== null) {
+                        display_instructions(current_instructions);
+                    }
 //                    start_keyboard_listener();
                 }
             } else if (trial.graph_trial_type === 'key_combination') {
@@ -313,6 +339,9 @@ jsPsych.plugins['graph-trial'] = (function() {
                         advance_to_next();
                     } else {
                         display_node(current_node, true);
+                        if (trial.instructions !== null) {
+                            display_instructions(current_instructions);
+                        }
                     }
                 }
             }
