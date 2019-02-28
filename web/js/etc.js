@@ -28,11 +28,17 @@ function choice(a) {
     return a[Math.floor(Math.random() * a.length)];
 }
 
-//Returns an array of [x,y] pairs, for the vertices of a regular n-sided polygon, with the first point at the top, and the points preceeding counterclockwise
-function get_polygon_coords(n_sides,cent_x,cent_y,radius) {
+//Returns an array of [x,y] pairs, for the vertices of a regular n-sided polygon
+// with the first point at the top, and the points preceeding counterclockwise
+// unless an offset angle (in radians) is specified
+function get_polygon_coords(n_sides,cent_x,cent_y,radius, offset) {
+    if (offset === undefined) {
+        offset = 0;
+    }
     var points = [];
     for (var i=0; i < n_sides; i++) {
-        points.push([cent_x+radius*Math.sin(2*i*Math.PI/n_sides),cent_y-radius*Math.cos(2*i*Math.PI/n_sides)]);
+        points.push([cent_x+radius*Math.sin(2*i*Math.PI/n_sides + offset),
+                     cent_y-radius*Math.cos(2*i*Math.PI/n_sides + offset)]);
     }
     return points;
 }
