@@ -126,6 +126,7 @@ build_experiment = function(structure_a, structure_b) {
     var drag_drop_cluster = {
         type: 'drag-drop-letters',
         letters: key_assignments,
+        preamble: 'Drag the letters onto the gray area of the screen in two or more groups that reflect any similarities you noticed between them.',
         drag_drop_type: 'free'
     }
     timeline.push(drag_drop_cluster);
@@ -179,7 +180,7 @@ build_experiment = function(structure_a, structure_b) {
     var did_you_notice = {
         type: 'survey-multi-choice',
         questions: [
-            {prompt: 'Did you notice a correspondence between the transitions between key combinations learned on the first task and the transitions between letters on the second task?',
+            {prompt: 'Did you notice a correspondence between the transitions between key combinations learned on the first task, and the transitions between letters on the second task?',
             options: ['Yes.', 'No.'],
             required: true}
         ]
@@ -204,7 +205,7 @@ build_experiment = function(structure_a, structure_b) {
             required: true}
         ]
     }
-    timeline.push(did_you_notice);
+    timeline.push(same_structure);
 
     // Demographics
     var demographics = {

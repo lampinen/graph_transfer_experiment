@@ -41,13 +41,13 @@ jsPsych.plugins['graph-trial'] = (function() {
             canvas_width: {
                 type: jsPsych.plugins.parameterType.INT,
                 pretty_name: 'CanvasWidth',
-                default: 600,
+                default: 1000,
                 description: 'The width of the canvas.'
             },
             canvas_height: {
                 type: jsPsych.plugins.parameterType.INT,
                 pretty_name: 'CanvasHeight',
-                default: 400,
+                default: 500,
                 description: 'The height of the canvas.'
             },
             preamble: {
@@ -152,7 +152,9 @@ jsPsych.plugins['graph-trial'] = (function() {
 //                persist: true,
 //                allow_held_key: false
 //            });
-            reset_held_keys();
+            if (trial.graph_trial_type === 'key_combination') {
+                reset_held_keys();
+            }
             document.addEventListener('keydown', keydown_callback, false);
             if (trial.graph_trial_type === 'key_combination') {
                 document.addEventListener('keyup', keyup_callback, false);
@@ -203,7 +205,7 @@ jsPsych.plugins['graph-trial'] = (function() {
             if (highlight_color === undefined) {
                 highlight_color = "blue";
             }
-            draw.lineWidth = 2;
+            draw.lineWidth = 3;
             draw.font = "40px Arial";
             draw.textAlign = "center";
             for (var i = 0; i < letters.length; i++) {
