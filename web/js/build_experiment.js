@@ -89,6 +89,7 @@ build_experiment = function(structure_a, structure_b) {
     var key_press_instructions = {
         type: 'instructions',
         pages: [
+            "Great, you've now completed the first part of the experiment!",
             'You will now begin the second part of the experiment. In this part, you will see individual letters shown on the screen as the experiment progresses. Your job is to watch the display and type each letter. This part of the experiment will take around 30 minutes.',
             'As a reminder, the amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct across both parts. Therefore, you should make your responses both quickly and accurately.<br/><br/>Click next to begin.'
         ],
@@ -109,6 +110,16 @@ build_experiment = function(structure_a, structure_b) {
     timeline.push(B_trials);
     
     // Debrief 
+
+    var debrief_instructions = {
+        type: 'instructions',
+        pages: [
+            "Great, you've now completed the second part of the experiment!",
+            'We just have a few questions to ask you before you finish.'
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(debrief_instructions);
 
     // D+D cluster
 
