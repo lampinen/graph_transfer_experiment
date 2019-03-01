@@ -11,19 +11,20 @@
 </head>
 <body></body>
 <script>
-
     var trial_type_a = 'key_combination'; 
     var trial_type_b = 'letter'; 
     var structure_a = new three_rooms();
     var structure_b = new ring();
     var epsilon = 0.1; // random transition probability
-    var walk_length = 5;
+    var walk_length = 4; // Note there will be length + 1 key presses
 
     var walk_a = noisy_random_walk(structure_a, walk_length, epsilon, 0); 
     var walk_b = noisy_random_walk(structure_b, walk_length, epsilon, 0); 
 
     var key_assignments = [
-        'B', 'C', 'D', 'F', 'G', 'H', 'J', 'K', 'L', 'M', 'N', 'P', 'Q', 'R',
+        'B', 'C', 'D', 'F', 'G', 
+        //'H', 'J', 'K', 'L',
+        'M', 'N', 'P', 'Q', 'R',
         'S', 'T', 'V', 'W', 'X', 'Y', 'Z'
     ];
     shuffle(key_assignments);
@@ -58,7 +59,10 @@
 
     // start experiment
     jsPsych.init({
-        timeline: timeline
+        timeline: timeline,
+        on_finish: function() {
+            jsPsych.data.displayData('json');
+        }
     });
 </script>
 </html>

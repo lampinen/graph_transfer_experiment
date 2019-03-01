@@ -33,11 +33,62 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
                 default: null,
                 description: 'String to display at top of the page.'
             },
+            target_locations: {
+                type: jsPsych.plugins.parameterType.COMPLEX,
+                array: true,
+                pretty_name: 'TargetLocations',
+                default: [],
+                description: 'Where the target locations for dragging + dropping are.' 
+            },
+            background_images: {
+                type: jsPsych.plugins.parameterType.STRING,
+                array: true,
+                pretty_name: 'BackgroundImages',
+                default: [],
+                description: 'Images to place in the background.'
+            },
+            background_image_locations: {
+                type: jsPsych.plugins.parameterType.COMPLEX,
+                array: true,
+                pretty_name: 'BackgroundImageLocations',
+                default: [],
+                description: 'Where to place the background image(s).'
+            },
+            bg_image_width: {
+                type: jsPsych.plugins.parameterType.INT,
+                pretty_name: 'BackgroundImageWidth',
+                default: 500,
+                description: 'The width of the background image(s).'
+            },
+            bg_image_height: {
+                type: jsPsych.plugins.parameterType.INT,
+                pretty_name: 'BackgroundImageHeight',
+                default: 500,
+                description: 'The height of the background image(s).'
+            },
             preplaced_draggable: {
                 type: jsPsych.plugins.parameterType.STRING,
                 pretty_name: 'Preplaced',
                 default: '',
                 description: 'Letter (if any) to pre-place.'
+            },
+            preplaced_draggable_location: {
+                type: jsPsych.plugins.parameterType.INT,
+                pretty_name: 'Preplaced',
+                default: 0,
+                description: 'Snap location to pre-place it at.'
+            },
+            snap_padding: {
+                type: jsPsych.plugins.parameterType.INT,
+                pretty_name: 'SnapPadding',
+                default: 15,
+                description: 'How forgiving snap locations are.'
+            },
+            shuffle_initial_locations: {
+                type: jsPsych.plugins.parameterType.BOOL,
+                pretty_name: 'ShuffleInitialLocations',
+                default: true,
+                description: 'Whether to shuffle the initial locations draggables are assigned to.'
             },
             drag_drop_type: {
                 type: jsPsych.plugins.parameterType.STRING,
@@ -51,19 +102,17 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
 
     plugin.trial = function(display_element, trial) {
 
-        //TODO: fix this crap
-        //trial.target_locations = locations of drop zones (rel. to background image) as {x: x, y: y, width: width, height: height} objects
-        trial.preplaced_image = (typeof trial.preplaced_image === 'undefined') ? "" : trial.preplaced_image; //Which image to pre-place, if any 
-        trial.preplaced_image_location = (typeof trial.preplaced_image_location === 'undefined') ? 0 : trial.preplaced_image_location; //Where to pre-place it (index in location list) 
         var draggable_height = 50;
         var draggable_width = 50;
-        trial.bg_image_height = trial.bg_image_height || 400;
-        trial.bg_image_width = trial.bg_image_width || 400;
-        trial.background_order = (typeof trial.background_order === 'undefined') ? "" : trial.background_order;
-        trial.background_images = (typeof trial.background_images === 'undefined') ? [] : trial.background_images; //must provide this or background image
-        trial.background_image_locations = (typeof trial.background_image_locations === 'undefined') ? [{"x": trial.canvas_width - (trial.bg_image_width + 20), "y": 0}] : trial.background_image_locations; 
+        var snap_padding = trial.snap_padding;
+        if (trial.background_images.length > trial.background_image_locations.length) {
+            if (trial.background_images.length === 1 && trial.background_image_locations.length === 0) {
+                trial.background_image_locations = [{"x": trial.canvas_width - (trial.bg_image_width + 20), "y": 0}]; 
+            } else {
+                throw "Not enough background image locations provided!";
+            }
+        }
 
-        var snap_padding = 15; //how generous snapping is, in pixels.
 
         var frame_freq = 50; // ms between frames
 
@@ -114,6 +163,9 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
         ]; 
 
         initial_locations = initial_locations.slice(0, trial.letters.length);
+        if (trial.shuffle_initial_locations) {
+            shuffle(initial_locations); // So that there is no bias in what appears where
+        }
 
         var bg_image_objects = trial.background_images.map(function(x) {
             var this_image = new Image(trial.bg_image_width, trial.bg_image_height);
@@ -154,9 +206,10 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
 
         // creating objects for all the necessary locations
         initial_locations = initial_locations.map(function(x) {var loc = new snap_location(x); return loc;});
-        //var target_locations = trial.target_locations.map(function(x) {var loc = new snap_location(x); return loc;});
+        var target_locations;
         var all_locations = initial_locations;
         if (trial.drag_drop_type !== 'free') {
+            target_locations = trial.target_locations.map(function(x) {var loc = new snap_location(x); return loc;});
             all_locations = initial_locations.concat(target_locations);
         }
 
@@ -181,9 +234,11 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
         function get_current_assignments() { // checks for completion
             var curr_assignments = [];
             if (trial.drag_drop_type === 'free') {
-                for (var i = 0; i < draggables_array.length; i++) {
-                    curr_assignments.push([draggables_array[i].position_x, draggables_array[i].position_y]);
-                }
+                curr_assignments = draggables_array.map(function(draggable) {
+                    return {'label': draggable.label,
+                            'position': [draggable.position_x, draggable.position_y]};
+
+                });
             } else {
                 for (var i = 0; i < target_locations.length; i++) {
                     if (!target_locations[i].occupied) {
@@ -203,6 +258,7 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
             this.position_y = initial_location.y;
             this.curr_location.assign_draggable(this);
 
+            this.letter = letter;
             this.label = label || letter;
             this.width = width || draggable_width;
             this.height = height || draggable_height;
@@ -260,7 +316,6 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
                     for (var i = 0; i < all_locations.length; i++ ) {
 
                         if (all_locations[i].contains(mouse)) {
-                            console.log("Contained in location " + i);
                             if (this.curr_location) {
                                 if (all_locations[i].occupied) {
                                     this.curr_location.assign_draggable(all_locations[i].draggable);
@@ -309,14 +364,15 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
         for (var i = 0; i < trial.letters.length; i++) {
             var this_draggable = new Draggable(trial.letters[i], initial_locations[i]);
             draggables_array.push(this_draggable);
-            if (trial.preplaced_image !== "" && this_draggable.label == trial.preplaced_image) { 
+            if (trial.preplaced_draggable !== "" && this_draggable.label == trial.preplaced_draggable) { 
                 this_draggable.curr_location.free();
-                target_locations[trial.preplaced_image_location].assign_draggable(this_draggable); 
+                target_locations[trial.preplaced_draggable_location].assign_draggable(this_draggable); 
             }
         }
 
         function redraw() {
             draw.clearRect(0, 0, canvas.width, canvas.height);
+            // Gray area
             if (trial.drag_drop_type === 'free') {
                 draw.beginPath();
     
@@ -326,6 +382,7 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
                 draw.fillStyle = "gray";
                 draw.fill();
             }
+            // background image(s), if any
             for (var i = 0; i < bg_image_objects.length; i++) {
                 draw.drawImage(bg_image_objects[i],
                                trial.background_image_locations[i].x,
@@ -334,16 +391,9 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
                                trial.bg_image_height);
             }
 
-            var currently_dragging = -1;
+            // Draggables
             for (var i = 0; i < draggables_array.length; i++) {
-                if (draggables_array[i].dragging) {
-                    currently_dragging = i;
-                } else { 
-                    draggables_array[i].draw();
-                }
-            }
-            if (currently_dragging !== -1) {
-                draggables_array[currently_dragging].draw();
+                draggables_array[i].draw();
             }
         }
         ////// event stuff /////////////////////////////
@@ -381,29 +431,27 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
             var mouse = getMouse(e, canvas);
             for (var i = draggables_array.length-1; i >= 0 ; i--) {
                 if (draggables_array[i].contains(mouse)) {
-                    return draggables_array[i].mousedown_handler(e, mouse);
+                    var curr = draggables_array[i];
+                    draggables_array.splice(i, 1); // remove
+                    draggables_array.push(curr); // And put at top of stack
+                    return curr.mousedown_handler(e, mouse);
                 }
             }
         });
 
         canvas.addEventListener('mousemove', function(e) {
             var mouse = getMouse(e, canvas);
-            for (var i = 0; i < draggables_array.length; i++) {
-                if (draggables_array[i].dragging) {
-                    return draggables_array[i].mousemove_handler(e, mouse);
-                }
+            var i = draggables_array.length - 1;
+            if (draggables_array[i].dragging) {
+                return draggables_array[i].mousemove_handler(e, mouse);
             }
         });
 
         canvas.addEventListener('mouseup', function(e) {
             var mouse = getMouse(e, canvas);
-            for (var i = 0; i < draggables_array.length; i++) {
-                if (draggables_array[i].dragging) {
-                    var curr = draggables_array[i];
-                    draggables_array.splice(i, 1); // remove
-                    draggables_array.push(curr); // And put at top of stack
-                    return curr.mouseup_handler(e, mouse);
-                }
+            var i = draggables_array.length - 1;
+            if (draggables_array[i].dragging) {
+                return draggables_array[i].mouseup_handler(e, mouse);
             }
         });
 
@@ -419,7 +467,7 @@ jsPsych.plugins['drag-drop-letters'] = (function() {
                 }
                 return;
             }
-            display_element.html('');
+            display_element.innerHTML = '';
 
             var trial_data = {
                 "rt": (new Date()).getTime() - start_time,

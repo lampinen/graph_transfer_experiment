@@ -80,7 +80,7 @@ build_experiment = function(structure_a, structure_b) {
         type: "graph-trial",
         trajectory: walk_a,
         graph_trial_type: trial_type_a,
-        preamble: 'Press the indicated key(s) quickly and accurately.'
+        preamble: 'Press the indicated key(s) quickly and accurately.',
         nodes_to_keys: trial_type_a == 'letter' ? key_assignments : key_combo_assignments
     };
     timeline.push(A_trials);
@@ -103,7 +103,7 @@ build_experiment = function(structure_a, structure_b) {
         type: "graph-trial",
         trajectory: walk_b,
         graph_trial_type: trial_type_b,
-        preamble: 'Type the displayed letter quickly and accurately.'
+        preamble: 'Type the displayed letter quickly and accurately.',
         nodes_to_keys: trial_type_b == 'letter' ? key_assignments : key_combo_assignments
     };
     timeline.push(B_trials);
@@ -164,9 +164,59 @@ build_experiment = function(structure_a, structure_b) {
     }
     timeline.push(drag_drop_on_structure);
 
+    // Did you notice
+    var did_you_notice = {
+        type: 'survey-multi-choice',
+        questions: [
+            {prompt: 'Did you notice a correspondence between the transitions between key combinations learned on the first task and the transitions between letters on the second task?',
+            options: ['Yes.', 'No.'],
+            required: true}
+        ]
+    }
+    timeline.push(did_you_notice);
+
+    var did_you_find_helpful = {
+        type: 'survey-likert',
+        questions: [
+            {prompt: 'Did you feel that what you learned in the first task was helpful for learning the second task?',
+            labels: ["Not at all helpful", "Only a little helpful", "Moderately helpful", "Quite helpful", "Extremely helpful"],
+            required: true}
+        ]
+    }
+    timeline.push(did_you_find_helpful);
+
+    var same_structure = {
+        type: 'survey-multi-choice',
+        questions: [
+            {prompt: 'In our experiment, for some participants the spatial learning experiment and the visual patterns experiment had the same underlying structure, and for other participants they had different structures. Which do you think it was for you?',
+            options: ['Same structure', 'Different structure'],
+            required: true}
+        ]
+    }
+    timeline.push(did_you_notice);
+
     // Demographics
-    
-    timeline = [];
+    var demographics = {
+        type: 'survey-multi-choice',
+        questions: [
+            {prompt: 'What is your age?',
+            options: ["<25", "25-35", "35-45", "45-55", "55-65", ">65"]},
+            {prompt: 'What is your level of education?',
+            options: ["No high school degree", "High school degree or GED", "Some college", "Associates or other two-year degree", "Bachelor's degree", "Master's degree", "PhD, JD, MD or similar"]},
+            {prompt: 'What is your gender?',
+            options: ['Male', 'Female', 'Other', 'Decline to state']},
+            {prompt: 'What is your race/ethnicity?',
+            options: ["Asian","American Indian/Native American", "Black or African American", "Hispanic", "White", "Other", "Decline to state"]},
+        ]
+    }
+    timeline.push(demographics);
+
+    var debrief = {
+        type: 'survey-text',
+        questions: [{prompt: 'Do you have any comments on this HIT?',
+                     rows: 5}] 
+    }
+    timeline.push(debrief);
 
 
     // start experiment
