@@ -2,6 +2,28 @@
 Various useful functions
 **/
 
+// Python-like range runction
+function range(start, end) {
+    if (end === undefined) {
+        end = start;
+        start = 0;
+    }
+    if (start === end) {
+        return [];
+    }
+    var result = [];
+    for (var i = start; i < end; i++) {
+        result.push(i);
+    }
+    return result;
+}
+
+// handles negative numbers in a better way for my use
+function mod(n, m) {
+  return ((n % m) + m) % m;
+}
+
+
 // Stolen from the internet, shuffles array in place
 function shuffle(a) {
     var j, x, i;

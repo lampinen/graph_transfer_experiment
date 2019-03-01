@@ -3,27 +3,6 @@ An implementation of a few graphs and random walks over them in a javascript
 framework
 **/
 
-// Python-like range runction
-function range(start, end) { 
-    if (end === undefined) {
-        end = start;
-        start = 0;
-    }
-    if (start === end) {
-        return [];
-    }
-    var result = [];
-    for (var i = start; i < end; i++) { 
-        result.push(i);
-    }
-    return result;
-}
-
-// handles negative numbers in a better way for my use
-function mod(n, m) {
-  return ((n % m) + m) % m;
-}
-
 // Graphs /////////////////////////////////////////////////////////////////////
 // Graphs are represented by an adjacency array of arrays, where each node's 
 // array contains the nodes it is adjacent to.
@@ -182,29 +161,35 @@ function fixed_random_graph() {
 
 // Visualizing graphs -- arguments are a canvas 2d context, a graph, and
 // center coordinates
+function get_three_rooms_coords(cent_x, cent_y, radius) {
+    var coords;
+    cent_y = cent_y - 0.2 * radius;
+    coords = get_polygon_coords(15, cent_x, cent_y, radius, Math.PI/15);
+    // make inner hexagon for "entry" nodes
+    var coords2 = get_polygon_coords(6, cent_x, cent_y, radius/2, 5*Math.PI/30);
+    coords[0] = coords2[0];
+    coords[4] = coords2[1];
+    coords[5] = coords2[2];
+    coords[9] = coords2[3];
+    coords[10] = coords2[4];
+    coords[14] = coords2[5];
+    // bump "point" nodes
+    var bump = 0.25;
+    coords[2][0] = coords[2][0] + bump*(coords[2][0] - cent_x); 
+    coords[2][1] = coords[2][1] + bump*(coords[2][1] - cent_y); 
+    coords[7][0] = coords[7][0] + bump*(coords[7][0] - cent_x); 
+    coords[7][1] = coords[7][1] + bump*(coords[7][1] - cent_y); 
+    coords[12][0] = coords[12][0] + bump*(coords[12][0] - cent_x); 
+    coords[12][1] = coords[12][1] + bump*(coords[12][1] - cent_y); 
+    return coords;
+}
+
 function draw_graph(draw, graph, cent_x, cent_y, radius) {
     var num_nodes = graph.nodes.length;
     var nodes = [];
     var coords;
     if (graph.name === 'three_rooms') {
-        cent_y = cent_y - 0.2 * radius;
-        coords = get_polygon_coords(15, cent_x, cent_y, radius, Math.PI/15);
-        // make inner hexagon for "entry" nodes
-        var coords2 = get_polygon_coords(6, cent_x, cent_y, radius/2, 5*Math.PI/30);
-        coords[0] = coords2[0];
-        coords[4] = coords2[1];
-        coords[5] = coords2[2];
-        coords[9] = coords2[3];
-        coords[10] = coords2[4];
-        coords[14] = coords2[5];
-        // bump "point" nodes
-        var bump = 0.25;
-        coords[2][0] = coords[2][0] + bump*(coords[2][0] - cent_x); 
-        coords[2][1] = coords[2][1] + bump*(coords[2][1] - cent_y); 
-        coords[7][0] = coords[7][0] + bump*(coords[7][0] - cent_x); 
-        coords[7][1] = coords[7][1] + bump*(coords[7][1] - cent_y); 
-        coords[12][0] = coords[12][0] + bump*(coords[12][0] - cent_x); 
-        coords[12][1] = coords[12][1] + bump*(coords[12][1] - cent_y); 
+        coords = get_three_rooms_coords(cent_x, cent_y, radius);
     } else {
         coords = get_polygon_coords(num_nodes, cent_x, cent_y, radius);
     }

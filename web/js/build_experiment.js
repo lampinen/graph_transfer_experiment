@@ -14,14 +14,15 @@ build_experiment = function(structure_a, structure_b) {
         'S', 'T', 'V', 'W', 'X', 'Y', 'Z'
     ];
     shuffle(key_assignments);
-    key_assignments = key_assignments.slice(0, structure_a.num_nodes);
+    key_assignments = key_assignments.slice(0, structure_b.nodes.length);
+
     var key_combo_assignments = [
         [' '], ['H'], ['J'], ['K'], ['L'], [' ', 'H'], [' ', 'J'], [' ', 'K'], 
         [' ', 'L'],  ['H', 'J'], ['H', 'K'], ['H', 'L'], ['J', 'K'],
         ['J', 'L'], ['K', 'L']
     ];
     shuffle(key_combo_assignments);
-    key_combo_assignments = key_combo_assignments.slice(0, structure_a.num_nodes);
+    key_combo_assignments = key_combo_assignments.slice(0, structure_a.nodes.length);
 
     var timeline = [];
 
@@ -75,17 +76,17 @@ build_experiment = function(structure_a, structure_b) {
     timeline.push(key_combo_start_instructions);
 
     // A trials
-    var demo_a = {
+    var A_trials = {
         type: "graph-trial",
         trajectory: walk_a,
         graph_trial_type: trial_type_a,
         preamble: 'Press the indicated key(s) quickly and accurately.'
         nodes_to_keys: trial_type_a == 'letter' ? key_assignments : key_combo_assignments
     };
-    timeline.push(demo_a);
+    timeline.push(A_trials);
 
     // B trial instructions 
-    var key_prerss_instructions = {
+    var key_press_instructions = {
         type: 'instructions',
         pages: [
             'You will now begin the second part of the experiment. In this part, you will see individual letters shown on the screen as the experiment progresses. Your job is to watch the display and type each letter. This part of the experiment will take around 30 minutes.',
@@ -93,23 +94,80 @@ build_experiment = function(structure_a, structure_b) {
         ],
         show_clickable_nav: true
     }
-    timeline.push(key_prerss_instructions);
+    timeline.push(key_press_instructions);
 
 
     // B trials
 
-    var demo_b = {
+    var B_trials = {
         type: "graph-trial",
         trajectory: walk_b,
         graph_trial_type: trial_type_b,
         preamble: 'Type the displayed letter quickly and accurately.'
         nodes_to_keys: trial_type_b == 'letter' ? key_assignments : key_combo_assignments
     };
-    timeline.push(demo_b);
+    timeline.push(B_trials);
     
     // Debrief 
 
+    // D+D cluster
+
+    var drag_drop_cluster = {
+        type: 'drag-drop-letters',
+        letters: key_assignments,
+        drag_drop_type: 'free'
+    }
+    timeline.push(drag_drop_cluster);
+
+    // Structure 2AFC
+    var structure_images = ['<img src="images/three_rooms.png" width=500 height=500>',
+                            '<img src="images/fixed_random.png" width=500 height=500>'];
+    shuffle(structure_images);
+    var structure_2AFC = {
+        type: 'survey-multi-choice',
+        questions: [
+            {prompt: 'The letters you saw on the second part of the experiment were not generated randomly. Instead, each letter could only lead to a few other letters appearing next. The letters you saw came from one of the two structures below, where dots represent letters and lines represent possible transitions. Click the structure that you think you had, then click continue.',
+            options: structure_images,
+            required: true,
+            horizontal: true}
+        ],
+        show_clickable_nav: true
+    }
+    timeline.push(structure_2AFC);
+
+    // D + D on structure 
+    var target_coords, true_structure_image, snap_padding;
+    if (structure_b.name === 'three_rooms') {
+        target_coords = get_three_rooms_coords(705, 225, 200); 
+        true_structure_image = './images/three_rooms.png';
+        snap_padding = 25;
+    } else {
+        target_coords = get_polygon_coords(15, 705, 225, 200); 
+        true_structure_image = './images/fixed_random.png';
+        snap_padding = 15;
+    }
+    target_coords = target_coords.map(function(loc) {
+        return {'x': loc[0], 'y': loc[1],
+                'width': 50, 'height': 50};
+    });
+
+    var drag_drop_on_structure = {
+        type: 'drag-drop-letters',
+        letters: key_assignments,
+        target_locations: target_coords,
+        snap_padding: snap_padding,
+        background_images: [true_structure_image], 
+        preamble: 'The structure you actually had was shown below. Try to place the letters on the points you think they correspond to. One has been placed to get you started.',
+        preplaced_draggable: key_assignments[0],
+        preplaced_draggable_location: 0,
+        drag_drop_type: 'image'
+    }
+    timeline.push(drag_drop_on_structure);
+
     // Demographics
+    
+    timeline = [];
+
 
     // start experiment
     jsPsych.init({

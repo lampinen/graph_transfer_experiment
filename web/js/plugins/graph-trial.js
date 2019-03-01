@@ -268,6 +268,7 @@ jsPsych.plugins['graph-trial'] = (function() {
         }
 
         function display_instructions(instruction) {
+            draw.textAlign = "center";
             draw.font = "30px Arial";
             draw.fillStyle = "black";
             draw.fillText(instruction, canvas.width/2, 40);
