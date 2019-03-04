@@ -92,7 +92,6 @@ jsPsych.plugins['graph-trial'] = (function() {
         var draw = canvas.getContext("2d");
 
         // state and event handling variables
-//        var keyable = false;
         var current_node;
         var current_instructions;
         var current_start_time;
@@ -102,6 +101,10 @@ jsPsych.plugins['graph-trial'] = (function() {
         var keys_for_combos = [32, 72, 74, 75, 76] // space, H, J, K, L 
         var held_keys = {}; // Will indicate whether each of the above keys is
                             // currently depressed
+        var combo_timing_out = false; // Whether part of a combo is pressed but
+                                      // is waiting for rest.
+        var partial_combo_timeout = 250; // ms until part is marked incorrect
+
 
         function reset_held_keys() {
             for (var i = 0; i < keys_for_combos.length; i++) {
@@ -110,20 +113,22 @@ jsPsych.plugins['graph-trial'] = (function() {
         }
 
         function check_key_combo(desired_combo) {
+            var positive_check = true;
+            var negative_check = true;
             for (var i = 0; i < keys_for_combos.length; i++) {
                 if (desired_combo.includes(keys_for_combos[i])) {
                     if (!held_keys[keys_for_combos[i]]) {
                         //console.log("failing on " + keys_for_combos[i])
-                        return false;
+                        positive_check = false;
                     }
                 } else {
                     if (held_keys[keys_for_combos[i]]) {
                         //console.log("failing2 on " + keys_for_combos[i])
-                        return false;
+                        negative_check = false;
                     }
                 }
             }
-            return true;
+            return [positive_check, negative_check];
         }
 
         if (trial.graph_trial_type === 'letter') {
@@ -143,15 +148,6 @@ jsPsych.plugins['graph-trial'] = (function() {
         var keyup_rts = [];
 
         function start_keyboard_listener() {
-//            jsPsych.pluginAPI.cancelAllKeyboardResponses();
-//            keyable = true;
-//            keyboard_listener = jsPsych.pluginAPI.getKeyboardResponse({
-//                callback_function: keyboard_callback,
-//                valid_responses: jsPsych.ALL_KEYS,
-//                rt_method: 'date',
-//                persist: true,
-//                allow_held_key: false
-//            });
             if (trial.graph_trial_type === 'key_combination') {
                 reset_held_keys();
             }
@@ -194,7 +190,7 @@ jsPsych.plugins['graph-trial'] = (function() {
             key_y_offset = 1.5 * letter_key_size;
         } else { //abstract
             letters = [" ", "H", "J", "K", "L"];
-            let_x_pos= [-3, -1.75, -0.5, 0.75, 2];
+            let_x_pos= [-3.25, -1.5, -0.25, 1, 2.25];
             key_y_offset = 0.5 * letter_key_size;
         }
 
@@ -203,9 +199,9 @@ jsPsych.plugins['graph-trial'] = (function() {
                 highlighted = [];
             } 
             if (highlight_color === undefined) {
-                highlight_color = "blue";
+                highlight_color = "#44FF44";
             }
-            draw.lineWidth = 3;
+            draw.lineWidth = 4;
             draw.font = "40px Arial";
             draw.textAlign = "center";
             for (var i = 0; i < letters.length; i++) {
@@ -263,7 +259,7 @@ jsPsych.plugins['graph-trial'] = (function() {
             } else if (trial.graph_trial_type === 'key_combination') {
                 draw.clearRect(0, 0, canvas.width, canvas.height);
                 draw_keyboard(trial.nodes_to_keys[node_index],
-                              incorrect ? "red" : "blue");
+                              incorrect ? "red" : "#44FF44");
             } else {
                 throw "Unknown trial type!";
             }
@@ -278,6 +274,8 @@ jsPsych.plugins['graph-trial'] = (function() {
 
         function advance_to_next() {
             //console.log("Advancing")
+            keyable = false;
+            combo_timing_out = false;
             if (trajectory.length == 0) {
                 end_trial();
                 return;
@@ -295,6 +293,7 @@ jsPsych.plugins['graph-trial'] = (function() {
             keyups.push([]);
             keyup_rts.push([]);
             reset_held_keys();
+            keyable = true;
         }
 
         function end_trial() {
@@ -338,12 +337,25 @@ jsPsych.plugins['graph-trial'] = (function() {
             } else if (trial.graph_trial_type === 'key_combination') {
                 if (keys_for_combos.includes(event_info.keyCode)) {
                     held_keys[event_info.keyCode] = true;
-                    if (check_key_combo(current_correct)) {
+                    var checks = check_key_combo(current_correct);
+                    if (checks[0] && checks[1]) {
                         advance_to_next();
                     } else {
-                        display_node(current_node, true);
-                        if (trial.instructions !== null) {
-                            display_instructions(current_instructions);
+                        if (!checks[0] && checks[1]) { // incomplete combo
+                            combo_timing_out = true;
+                            setTimeout(function () {
+                                if (combo_timing_out) {
+                                    display_node(current_node, true);
+                                    if (trial.instructions !== null) {
+                                        display_instructions(current_instructions);
+                                    }
+                                }
+                            }, partial_combo_timeout);
+                        } else {
+                            display_node(current_node, true);
+                            if (trial.instructions !== null) {
+                                display_instructions(current_instructions);
+                            }
                         }
                     }
                 }

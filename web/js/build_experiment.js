@@ -2,7 +2,7 @@ build_experiment = function(structure_a, structure_b) {
     var trial_type_a = 'key_combination'; 
     var trial_type_b = 'letter'; 
     var epsilon = 0.1; // random transition probability
-    var walk_length = 4; // Note there will be length + 1 key presses
+    var walk_length = 99; // Note there will be length + 1 key presses
 
     var walk_a = noisy_random_walk(structure_a, walk_length, epsilon, 0); 
     var walk_b = noisy_random_walk(structure_b, walk_length, epsilon, 0); 
@@ -31,7 +31,7 @@ build_experiment = function(structure_a, structure_b) {
         type: 'instructions',
         pages: [
             'Welcome to our experiment on key-press reactions. Click next to begin.',
-            'There will be two parts to this experiment, each of which should take approximately 30 minutes. Click next to proceed to the first part.'
+            'There will be a few parts to this experiment, it should take about an hour total. Click next to proceed to the first part.'
         ],
         show_clickable_nav: true
     }
@@ -43,7 +43,7 @@ build_experiment = function(structure_a, structure_b) {
         type: 'instructions',
         pages: [
             'You will now begin the first part of the experiment. In this part, you will see five squares shown on the screen, which will light up as the experiment progresses. These squares correspond with keys on your keyboard, and your job is to watch the squares and press the corresponding key when that square lights up.<br/><br/>This part will take around 30 minutes, and then you will progress to the second part of the experiment.',
-            'The amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct across both parts. Therefore, you should make your responses both quickly and accurately.<br/><br/>Click next to begin.'
+            'The amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct overall. Therefore, you should make your responses both quickly and accurately.<br/><br/>Click next to begin.'
         ],
         show_clickable_nav: true
     }
@@ -69,7 +69,7 @@ build_experiment = function(structure_a, structure_b) {
     var key_combo_start_instructions = {
         type: 'instructions',
         pages: [
-            'Great, you are ready to begin! Remember, the amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct across both parts. Therefore, you should make your responses both quickly and accurately.'
+            'Great, you are ready to begin! Remember, the amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct overall. Therefore, you should make your responses both quickly and accurately.'
         ],
         show_clickable_nav: true
     }
@@ -115,7 +115,7 @@ build_experiment = function(structure_a, structure_b) {
         type: 'instructions',
         pages: [
             "Great, you've now completed the second part of the experiment!",
-            'We just have a few questions to ask you before you finish.'
+            'In the final part of the experiment, we will ask you a few questions. This should take about 5 minutes.'
         ],
         show_clickable_nav: true
     }
@@ -126,7 +126,7 @@ build_experiment = function(structure_a, structure_b) {
     var drag_drop_cluster = {
         type: 'drag-drop-letters',
         letters: key_assignments,
-        preamble: 'Drag the letters onto the gray area of the screen in two or more groups that reflect any similarities you noticed between them.',
+        preamble: 'Drag the letters onto the gray area of the screen in two or more groups that seem to go together.',
         drag_drop_type: 'free'
     }
     timeline.push(drag_drop_cluster);
