@@ -244,6 +244,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     // start experiment
     jsPsych.init({
         timeline: timeline,
+        preload_images: ["images/three_rooms.png", "images/fixed_random.png"],
         on_finish: function() {
                 document.getElementsByTagName('body')[0].innerHTML = "Thank you for completing this HIT. Please do not leave this page. Your responses are being saved, and your completion will be recorded as soon as that is done (should be no more than 1-2 minutes).";
                 var timestamp = (new Date().getTime());
