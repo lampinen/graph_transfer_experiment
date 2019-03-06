@@ -189,9 +189,11 @@ jsPsych.plugins['graph-trial'] = (function() {
             let_x_pos= [-1.5, -0.25, 1, 2.25];
             key_y_offset = 1.5 * letter_key_size;
         } else { //abstract
-            letters = [" ", "H", "J", "K", "L"];
-            let_x_pos= [-3.25, -1.5, -0.25, 1, 2.25];
-            key_y_offset = 0.5 * letter_key_size;
+//            letters = [" ", "H", "J", "K", "L"];
+//            let_x_pos= [-3.25, -1.5, -0.25, 1, 2.25];
+            letters = ["H", "J", "K", "L"];
+            let_x_pos= [-2.375, -1.125, 0.125, 1.375];
+            key_y_offset = letter_key_size;
         }
 
         function draw_keyboard(highlighted, highlight_color) {
@@ -238,6 +240,20 @@ jsPsych.plugins['graph-trial'] = (function() {
                 draw.fillText("space", 
                               canvas.width/3,
                               canvas.height/2 + letter_key_size);
+            } else {
+                if (highlighted.includes(' ')) {
+                    draw.strokeStyle = highlight_color;
+                    draw.fillStyle = highlight_color;
+                } else {
+                    draw.strokeStyle = "black";
+                    draw.fillStyle = "black";
+                }
+                draw_letter_key(canvas.width/2 + (let_x_pos[0]) * letter_key_size,
+                                canvas.height/2 + 0.25 * letter_key_size,
+                                letter_key_size,
+                                letter_key_r,
+                                trial.keyboard_type == "grounded" ? letters[i] : "");
+
             }
             draw.strokeStyle = "black";
             draw.fillStyle = "black";
