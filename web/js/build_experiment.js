@@ -132,13 +132,14 @@ build_experiment = function(structure_a, structure_b) {
     timeline.push(drag_drop_cluster);
 
     // Structure 2AFC
-    var structure_images = ['<img src="images/three_rooms.png" width=500 height=500>',
-                            '<img src="images/fixed_random.png" width=500 height=500>'];
+    timeline = []
+    var structure_images = ['<img src="images/three_rooms.png" width=440 height=440>',
+                            '<img src="images/fixed_random.png" width=440 height=440>'];
     shuffle(structure_images);
     var structure_2AFC = {
         type: 'survey-multi-choice',
         questions: [
-            {prompt: 'The letters you saw on the second part of the experiment were not generated randomly. Instead, each letter could only lead to a few other letters appearing next. The letters you saw came from one of the two structures below, where dots represent letters and lines represent possible transitions. Click the structure that you think you had, then click continue.',
+            {prompt: 'The letters you saw in the second part of the experiment were not generated randomly. Instead, each letter could only lead to a few other letters appearing next. The letters you saw came from one of the two structures below, where dots represent letters and lines represent possible transitions. Click the structure that you think you had, then click continue.',
             options: structure_images,
             required: true,
             horizontal: true}
