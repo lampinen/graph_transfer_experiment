@@ -1,4 +1,6 @@
 build_experiment = function(structure_a, structure_b, walk_length_a, walk_length_b, epsilon) {
+    var turk_info = jsPsych.turk.turkInfo(); 
+    var worker_id = turk_info.workerId;
     var trial_type_a = 'key_combination'; 
     var trial_type_b = 'letter'; 
 
