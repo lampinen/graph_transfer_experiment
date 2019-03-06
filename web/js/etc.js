@@ -86,7 +86,7 @@ function save_data(filename, filedata, callback, error_callback){
     }
     xhr.open('POST', 'https://web.stanford.edu/~lampinen/cgi-bin/save_data.php'); 
     xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.send(JSON.stringify({filename: name, filedata: data}));
+    xhr.send(JSON.stringify({filename: filename, filedata: filedata}));
 }
 
 //// Needs to be rewritten to not us jQuery
