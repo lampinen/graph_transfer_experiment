@@ -73,24 +73,31 @@ function char_to_keycode(character) {
 
 //data/server communication
 function save_data(filename, filedata, callback, error_callback){
-   $.ajax({
-      type: 'post',
-      cache: false,
-      url: 'https://web.stanford.edu/~lampinen/cgi-bin/save_data.php', 
-      data: {filename: filename, filedata: filedata},
-      success: callback,
-      error: error_callback
-   });
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4)
+        {
+            if (xhr.status == 200) {
+                callback(); 
+            } else {
+                error_callback(); 
+            }
+        }
+    }
+    xhr.open('POST', 'https://web.stanford.edu/~lampinen/cgi-bin/save_data.php'); 
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.send(JSON.stringify({filename: name, filedata: data}));
 }
 
-function load_data(filename, callback, error_callback){
-   $.ajax({
-      type: "post",
-      url: 'https://web.stanford.edu/~lampinen/cgi-bin/recover_auxiliary_data.php', 
-      cache: false,
-      data: {filename: filename},
-      dataType: 'json',
-      success: callback,
-      error: error_callback});
-}
-
+//// Needs to be rewritten to not us jQuery
+//function load_data(filename, callback, error_callback){
+//   $.ajax({
+//      type: "post",
+//      url: 'https://web.stanford.edu/~lampinen/cgi-bin/recover_auxiliary_data.php', 
+//      cache: false,
+//      data: {filename: filename},
+//      dataType: 'json',
+//      success: callback,
+//      error: error_callback});
+//}
+//
