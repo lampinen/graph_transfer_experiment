@@ -30,6 +30,7 @@
    max-width: 95%; /* this is mainly an IE 10-11 fix */
    text-align: center;
    margin: auto; /* this is for overflowing content */
+   width: 1000px; /* Andrew's custom setting to control width */
  }
 
  .jspsych-top {
@@ -46,7 +47,6 @@
   font-family: 'Open Sans', 'Arial', sans-serif;
   font-size: 18px;
   line-height: 1.6em;
-  width: 1000px;
 }
 
 /* Form elements like input fields and buttons */
