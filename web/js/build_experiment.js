@@ -243,7 +243,12 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     jsPsych.init({
         timeline: timeline,
         on_finish: function() {
-            jsPsych.data.get().localSave('json','gl_experiment_data.json');
+                document.getElementsByTagName('body')[0].innerHTML = "Thank you for completing this HIT. Please do not leave this page. Your responses are being saved, and your completion will be recorded as soon as that is done (should be no more than 1-2 minutes).";
+                var timestamp = (new Date().getTime());
+                var final_submit = function() {
+                    jsPsych.turk.submitToTurk({"completion_time": timestamp});
+                };
+                save_data("gl/pilot/" + worker_id + "_" + timestamp + ".json", jsPsych.data.dataAsJSON(), final_submit, final_submit);
         }
     });
 }
