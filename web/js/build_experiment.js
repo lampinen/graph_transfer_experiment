@@ -1,11 +1,19 @@
-build_experiment = function(structure_a, structure_b) {
+build_experiment = function(structure_a, structure_b, walk_length_a, walk_length_b, epsilon) {
     var trial_type_a = 'key_combination'; 
     var trial_type_b = 'letter'; 
-    var epsilon = 0.1; // random transition probability
-    var walk_length = 99; // Note there will be length + 1 key presses
 
-    var walk_a = noisy_random_walk(structure_a, walk_length, epsilon, 0); 
-    var walk_b = noisy_random_walk(structure_b, walk_length, epsilon, 0); 
+    if (walk_length_a === undefined) {
+        walk_length_a = 1499;
+    } 
+    if (walk_length_b === undefined) {
+        walk_length_b = walk_length_a;
+    } 
+    if (epsilon === undefined) {
+        epsilon = 0.1; // random transition probability
+    }
+
+    var walk_a = noisy_random_walk(structure_a, walk_length_a, epsilon, 0); 
+    var walk_b = noisy_random_walk(structure_b, walk_length_b, epsilon, 0); 
 
     var key_assignments = [
         'B', 'C', 'D', 'F', 'G', 
