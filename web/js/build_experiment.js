@@ -126,7 +126,7 @@ build_experiment = function(structure_a, structure_b) {
     var drag_drop_cluster = {
         type: 'drag-drop-letters',
         letters: key_assignments,
-        preamble: 'Drag the letters onto the gray area of the screen in two or more groups that seem to go together.',
+        preamble: 'Drag the letters onto the gray area of the screen, so that the ones that you think go more together are closer toegether.',
         drag_drop_type: 'free'
     }
     timeline.push(drag_drop_cluster);
@@ -235,7 +235,7 @@ build_experiment = function(structure_a, structure_b) {
     jsPsych.init({
         timeline: timeline,
         on_finish: function() {
-            jsPsych.data.displayData('json');
+            jsPsych.data.get().localSave('json','gl_experiment_data.json');
         }
     });
 }
