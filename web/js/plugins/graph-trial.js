@@ -85,8 +85,17 @@ jsPsych.plugins['graph-trial'] = (function() {
                 'tabindex="1"' + // focus hack
                 '></canvas>';
         html += '</div>'; // graph-trial-canvas-area
+        // progress bar
+        html += '<div id="progress-group">' + 
+            '<div id="progress-bg">' +
+            '<div id="progress-bar"></div>' +
+            '</div>' +
+            '<div id="progress-text">Current part progress</div>' +
+            '</div>'
 
         display_element.innerHTML = html;
+
+        var progress_bar = display_element.querySelector('#progress-bar');
 
         var canvas = display_element.querySelector('#graph-trial-canvas');
         var draw = canvas.getContext("2d");
@@ -302,6 +311,7 @@ jsPsych.plugins['graph-trial'] = (function() {
                 current_instructions = trial.instructions.shift();
                 display_instructions(current_instructions);
             }
+            progress_bar.style.width = 100*(1-(trajectory.length+1)/trial.trajectory.length) + '%';
             current_correct = nodes_to_keycodes[current_node];
             current_start_time = (new Date()).getTime();
             keypresses.push([]);

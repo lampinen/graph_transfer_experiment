@@ -1,0 +1,26 @@
+#progress-group {
+    width: 100%;
+    position: relative;
+}
+
+#progress-bg, #progress-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+#progress-bg {
+    width: 100%;
+    background-color: #E0E0E0;
+}
+
+#progress-text {
+    z-index: 10;
+    left: 1%;
+}
+
+#progress-bar {
+    width: 1%;
+    height: 30px;
+    background-color: #88BBFF;
+}
