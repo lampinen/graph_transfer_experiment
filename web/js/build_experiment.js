@@ -250,7 +250,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
                 var final_submit = function() {
                     jsPsych.turk.submitToTurk({"completion_time": timestamp});
                 };
-                save_data("gl/pilot/" + worker_id + "_" + timestamp + ".json", jsPsych.data.dataAsJSON(), final_submit, final_submit);
+                save_data("gl/pilot/" + worker_id + "_" + timestamp + ".json", jsPsych.data.get().json(), final_submit, final_submit);
         }
     });
 }
