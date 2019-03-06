@@ -132,7 +132,6 @@ build_experiment = function(structure_a, structure_b) {
     timeline.push(drag_drop_cluster);
 
     // Structure 2AFC
-    timeline = []
     var structure_images = ['<img src="images/three_rooms.png" width=440 height=440>',
                             '<img src="images/fixed_random.png" width=440 height=440>'];
     shuffle(structure_images);
