@@ -72,7 +72,7 @@ function char_to_keycode(character) {
 }
 
 //data/server communication
-function saveData(filename, filedata, callback, error_callback){
+function save_data(filename, filedata, callback, error_callback){
    $.ajax({
       type: 'post',
       cache: false,
