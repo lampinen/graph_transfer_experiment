@@ -156,18 +156,16 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
         show_clickable_nav: true
     }
     timeline.push(structure_2AFC);
-
     // D + D on structure 
     var target_coords, true_structure_image, snap_padding;
     if (structure_b.name === 'three_rooms') {
-        target_coords = get_three_rooms_coords(705, 225, 200); 
         true_structure_image = './images/three_rooms.png';
         snap_padding = 25;
     } else {
-        target_coords = get_polygon_coords(15, 705, 225, 200); 
         true_structure_image = './images/fixed_random.png';
         snap_padding = 15;
     }
+    target_coords = get_graph_coords(structure_b.name, 705, 225, 200);
     target_coords = target_coords.map(function(loc) {
         return {'x': loc[0], 'y': loc[1],
                 'width': 50, 'height': 50};
