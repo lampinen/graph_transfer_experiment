@@ -141,22 +141,22 @@ function fixed_random_graph() {
     this.name = "fixed_random_graph_0";
     this.nodes = range(15);
     this.edges = [
-        [14, 3, 2],
-        [3, 13, 14, 4, 2, 8],
-        [3, 4, 1, 0],
-        [2, 1, 6, 0],
-        [2, 5, 1, 7],
-        [8, 4, 6],
-        [3, 9, 7, 5],
-        [10, 11, 6, 8, 4],
-        [5, 10, 13, 7, 1, 9],
-        [6, 10, 11, 8],
-        [8, 11, 14, 9, 7],
-        [10, 12, 7, 9],
-        [13, 11],
-        [1, 12, 8],
-        [1, 10, 0]
-    ]; 
+        [3, 11, 13, 14],
+        [2, 14, 5, 13],
+        [3, 1, 5, 4],
+        [2, 5, 0, 4],
+        [6, 3, 2],
+        [3, 7, 6, 1, 2, 12],
+        [5, 9, 4],
+        [5, 8, 12],
+        [7, 10],
+        [12, 10, 6, 11, 13],
+        [9, 8, 13, 11],
+        [0, 9, 10, 12],
+        [14, 9, 7, 13, 5, 11],
+        [9, 10, 0, 12, 1],
+        [12, 1, 0]
+    ];
 }
 
 // Visualizing graphs -- arguments are a canvas 2d context, a graph, and
@@ -184,15 +184,50 @@ function get_three_rooms_coords(cent_x, cent_y, radius) {
     return coords;
 }
 
-function draw_graph(draw, graph, cent_x, cent_y, radius) {
-    var num_nodes = graph.nodes.length;
-    var nodes = [];
+function get_fixed_random_coords(cent_x, cent_y, radius) {
+    var coords = [
+        [-0.68, -0.91],
+        [ 0.16, -0.79],
+        [ 1.00, -0.54],
+        [ 0.97, -0.18],
+        [ 1.33,  0.17],
+        [ 0.46,  0.07],
+        [ 0.81,  0.59],
+        [ 0.03,  0.98],
+        [-0.40,  1.24],
+        [-0.56,  0.24],
+        [-0.90,  0.60],
+        [-1.01, -0.02],
+        [-0.18, -0.02],
+        [-0.54, -0.39],
+        [-0.28, -1.25]
+    ];
+    
+    // Adjustments
+    radius = 0.85 * radius;
+    for (var i=0; i < coords.length; i++) {
+        coords[i][0] = cent_x + radius * coords[i][0];
+        coords[i][1] = cent_y + radius * coords[i][1];
+    }
+    return coords;
+}
+
+function get_graph_coords(graph_name, cent_x, cent_y, radius) {
     var coords;
-    if (graph.name === 'three_rooms') {
+    if (graph_name === 'three_rooms') {
         coords = get_three_rooms_coords(cent_x, cent_y, radius);
+    } else if (graph_name === 'fixed_random_graph_0') {
+        coords = get_fixed_random_coords(cent_x, cent_y, radius);
     } else {
         coords = get_polygon_coords(num_nodes, cent_x, cent_y, radius);
     }
+    return coords;
+}
+
+function draw_graph(draw, graph, cent_x, cent_y, radius) {
+    var num_nodes = graph.nodes.length;
+    var nodes = [];
+    var coords = get_graph_coords(graph.name, cent_x, cent_y, radius);
 
     //aesthetics 
     var node_r = 8;
