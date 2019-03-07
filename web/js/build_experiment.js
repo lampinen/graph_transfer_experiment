@@ -1,5 +1,9 @@
 build_experiment = function(structure_a, structure_b, walk_length_a, walk_length_b, epsilon, path) {
     var turk_info = jsPsych.turk.turkInfo(); 
+    if (turk_info.previewMode) {
+        document.getElementsByTagName('body')[0].innerHTML = "You must accept this HIT to work on it.<br /><br />This HIT is a psychology experiment on key-press learning. This experiment should take about 1 hour, and there will be a performance bonus of $2 for high performing subjects. (Note: if you completed a prior HIT posted by me, you cannot participate in this one, sorry.).";
+        return;
+    }
     var worker_id = turk_info.workerId;
     var trial_type_a = 'key_combination'; 
     var trial_type_b = 'letter'; 
