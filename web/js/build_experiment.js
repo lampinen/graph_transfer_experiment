@@ -156,6 +156,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
         show_clickable_nav: true
     }
     timeline.push(structure_2AFC);
+
     // D + D on structure 
     var target_coords, true_structure_image, snap_padding;
     if (structure_b.name === 'three_rooms') {
@@ -208,7 +209,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     var same_structure = {
         type: 'survey-multi-choice',
         questions: [
-            {prompt: 'In our experiment, for some participants the spatial learning experiment and the visual patterns experiment had the same underlying structure, and for other participants they had different structures. Which do you think it was for you?',
+            {prompt: 'In our experiment, for some participants the key-combination experiment and the single-key experiment had the same underlying structure, and for other participants they had different structures. Which do you think it was for you?',
             options: ['Same structure', 'Different structure'],
             required: true}
         ]
