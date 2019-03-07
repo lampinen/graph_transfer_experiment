@@ -1,4 +1,4 @@
-build_experiment = function(structure_a, structure_b, walk_length_a, walk_length_b, epsilon) {
+build_experiment = function(structure_a, structure_b, walk_length_a, walk_length_b, epsilon, path) {
     var turk_info = jsPsych.turk.turkInfo(); 
     var worker_id = turk_info.workerId;
     var trial_type_a = 'key_combination'; 
@@ -12,6 +12,9 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     } 
     if (epsilon === undefined) {
         epsilon = 0.1; // random transition probability
+    }
+    if (path === undefined) {
+        path = './';
     }
 
     var walk_a = noisy_random_walk(structure_a, walk_length_a, epsilon, 0); 
@@ -142,8 +145,8 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     timeline.push(drag_drop_cluster);
 
     // Structure 2AFC
-    var structure_images = ['<img src="images/three_rooms.png" width=440 height=440>',
-                            '<img src="images/fixed_random.png" width=440 height=440>'];
+    var structure_images = ['<img src="' + path +'images/three_rooms.png" width=440 height=440>',
+                            '<img src="' + path +'images/fixed_random.png" width=440 height=440>'];
     shuffle(structure_images);
     var structure_2AFC = {
         type: 'survey-multi-choice',
@@ -160,10 +163,10 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     // D + D on structure 
     var target_coords, true_structure_image, snap_padding;
     if (structure_b.name === 'three_rooms') {
-        true_structure_image = './images/three_rooms.png';
+        true_structure_image = path + 'images/three_rooms.png';
         snap_padding = 25;
     } else {
-        true_structure_image = './images/fixed_random.png';
+        true_structure_image = path + 'images/fixed_random.png';
         snap_padding = 15;
     }
     target_coords = get_graph_coords(structure_b.name, 705, 225, 200);
@@ -243,7 +246,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     // start experiment
     jsPsych.init({
         timeline: timeline,
-        preload_images: ["images/three_rooms.png", "images/fixed_random.png"],
+        preload_images: [path + "images/three_rooms.png", path + "images/fixed_random.png"],
         on_finish: function() {
                 document.getElementsByTagName('body')[0].innerHTML = "Thank you for completing this HIT. Please do not leave this page. Your responses are being saved, and your completion will be recorded as soon as that is done (should be no more than 1-2 minutes).";
                 var timestamp = (new Date().getTime());
