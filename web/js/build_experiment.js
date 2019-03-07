@@ -185,7 +185,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
         target_locations: target_coords,
         snap_padding: snap_padding,
         background_images: [true_structure_image], 
-        preamble: 'The structure you actually had was shown below. Try to place the letters on the points you think they correspond to. One has been placed to get you started.',
+        preamble: 'The structure you actually had is shown below. Try to place the letters on the points you think they correspond to. One has been placed to get you started.',
         preplaced_draggable: key_assignments[0],
         preplaced_draggable_location: 0,
         drag_drop_type: 'image'
