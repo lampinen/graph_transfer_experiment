@@ -43,14 +43,20 @@ def get_polygon_coords(n_sides, cent_x=0, cent_y=0, radius=1, offset=0):
 
 these_coords = get_polygon_coords(num_nodes)
 
-def stress(edges, coords=these_coords):
+def stress(edges, coords=these_coords, include_dists=False):
     stress = []
+    num_nodes = len(edges)
     for node_i, node_edges in enumerate(edges):
         this_stress = 0
+        coords_i = coords[node_i]
         for node_j in node_edges:
-            coords_i = coords[node_i]
             coords_j = coords[node_j]
             this_stress += np.sqrt((coords_i[0]-coords_j[0])**2 + (coords_i[1]-coords_j[1])**2)
+        for node_j in range(num_nodes):
+            if node_i == node_j: 
+                continue
+            coords_j = coords[node_j]
+            this_stress += 0.25/np.sqrt((coords_i[0]-coords_j[0])**2 + (coords_i[1]-coords_j[1])**2)
         stress.append(this_stress)
     return stress
 
