@@ -1,3 +1,5 @@
 *.swp
 mturk/
 raw_data/
+data_analysis/*.html
+anonymized_data/pilot/
