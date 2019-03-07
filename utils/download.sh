@@ -7,7 +7,9 @@ anon_target=../anonymized_data
 
 
 # download raw
-scp -r ${host}:${datadir}/${subdir} ${raw_target}/${subdir}
+mkdir -p ${raw_target}/${subdir}
+
+scp ${host}:${datadir}/${subdir}/*.json ${raw_target}/${subdir}/
 
 # anonymize
 mkdir -p ${anon_target}/${subdir}
