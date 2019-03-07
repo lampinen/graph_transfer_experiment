@@ -59,8 +59,8 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     var key_combo_general_instructions = {
         type: 'instructions',
         pages: [
-            'You will now begin the first part of the experiment. In this part, you will see five squares shown on the screen, which will light up as the experiment progresses. These squares correspond with keys on your keyboard, and your job is to watch the squares and press the corresponding key when that square lights up.<br/><br/>This part will take around 30 minutes, and then you will progress to the second part of the experiment.',
-            'The amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct overall. Therefore, you should make your responses both quickly and accurately.<br/><br/>Click next to begin.'
+            'You will now begin the first part of the experiment. In this part, you will see five squares shown on the screen, which will light up as the experiment progresses. These squares correspond with keys on your keyboard, and your job is to watch the squares and press the corresponding key(s) when the square(s) light up.<br/><br/>This part will take around 25 minutes, and then you will progress to the second part of the experiment.',
+            'The amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct on your first try (across both parts of the experiment). Therefore, you should make your responses both quickly and accurately.<br/><br/>Click next to begin.'
         ],
         show_clickable_nav: true
     }
@@ -69,7 +69,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     var key_combo_trial_instructions = {
         type: "graph-trial",
         graph_trial_type: 'key_combination',
-        preamble: 'First, we need to show you which key corresponds to each square. You will need to remember these keys during the experiment. Press the appropriate key to continue.',
+        preamble: 'First, we need to show you which key corresponds to each square. You will need to remember these keys during the experiment. Press the appropriate key to continue. If multiple squares light up, try to press the corresponding keys together. If you make an incorrect response, the squares will turn red until you correct it.',
         trajectory: [0, 1, 2, 3, 4, 5],
         nodes_to_keys: [[' '], ['H'], ['J'], ['K'], ['L'], [' ', 'K']],
         instructions: [
@@ -86,7 +86,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     var key_combo_start_instructions = {
         type: 'instructions',
         pages: [
-            'Great, you are ready to begin! Remember, the amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct overall. Therefore, you should make your responses both quickly and accurately.'
+            'Great, you are ready to begin! Remember, the amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct on your first try (across both parts of the experiment). Therefore, you should make your responses both quickly and accurately.'
         ],
         show_clickable_nav: true
     }
@@ -97,8 +97,8 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
         type: "graph-trial",
         trajectory: walk_a,
         graph_trial_type: trial_type_a,
-        preamble: 'Press the indicated key(s) quickly and accurately.',
-        nodes_to_keys: trial_type_a == 'letter' ? key_assignments : key_combo_assignments
+        preamble: 'Press the indicated key(s) quickly and accurately. Remember that the',
+        nodes_to_keys: key_combo_assignments //trial_type_a == 'letter' ? key_assignments : key_combo_assignments
     };
     timeline.push(A_trials);
 
@@ -108,7 +108,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
         pages: [
             "Great, you've now completed the first part of the experiment!",
             'You will now begin the second part of the experiment. In this part, you will see individual letters shown on the screen as the experiment progresses. Your job is to watch the display and type each letter. This part of the experiment will take around 30 minutes.',
-            'As a reminder, the amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct across both parts. Therefore, you should make your responses both quickly and accurately.<br/><br/>Click next to begin.'
+            'As before, the amount of time the experiment takes is not fixed, but the number of responses you have to make is. We will also reward you with a $2 bonus if you get more than 90% of your responses correct across both parts. Therefore, you should make your responses both quickly and accurately.<br/><br/>Click next to begin.'
         ],
         show_clickable_nav: true
     }
@@ -122,7 +122,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
         trajectory: walk_b,
         graph_trial_type: trial_type_b,
         preamble: 'Type the displayed letter quickly and accurately.',
-        nodes_to_keys: trial_type_b == 'letter' ? key_assignments : key_combo_assignments
+        nodes_to_keys: key_assignments //trial_type_b == 'letter' ? key_assignments : key_combo_assignments
     };
     timeline.push(B_trials);
     
@@ -216,7 +216,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     var same_structure = {
         type: 'survey-multi-choice',
         questions: [
-            {prompt: 'In our experiment, for some participants the key-combination experiment and the single-key experiment had the same underlying structure, and for other participants they had different structures. Which do you think it was for you?',
+            {prompt: 'In our experiment, for some participants the key-combination experiment and the single-letter experiment had the same underlying structure, and for other participants they had different structures. Which do you think it was for you?',
             options: ['Same structure', 'Different structure'],
             required: true}
         ]
@@ -257,7 +257,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
                 var final_submit = function() {
                     jsPsych.turk.submitToTurk({"completion_time": timestamp});
                 };
-                save_data("gl/pilot/" + worker_id + "_" + timestamp + ".json", jsPsych.data.get().json(), final_submit, final_submit);
+                save_data("gl/ex0/" + worker_id + "_" + timestamp + ".json", jsPsych.data.get().json(), final_submit, final_submit);
         }
     });
 }
