@@ -1,0 +1,58 @@
+---
+title: "Bonus checks"
+output: html_document
+---
+
+# libraries
+
+```{r}
+library(rjson)
+library(purrr)
+library(tidyverse)
+```
+
+# Load data
+
+```{r}
+data_dir = "../raw_data/pilot"
+data_files = list.files(data_dir)
+
+df.graph_trials = data.frame()
+
+graph_trials_to_df = function(list_data) {
+  df = tibble::as_tibble(list_data[c("trial_type", "trial_index", "graph_trial_type", "trajectory", "keypresses", "keypress_rts", "keyups", "keyup_rts")])
+  df$nodes_to_keys = rep(list(list_data$nodes_to_keys), nrow(df))
+  return(df)
+}
+
+for (filename in data_files) {
+  list.this_subject_data = fromJSON(file=sprintf("%s/%s", data_dir, filename)) 
+  df.this_subject_data = graph_trials_to_df(list.this_subject_data[[5]]) %>%
+    bind_rows(graph_trials_to_df(list.this_subject_data[[7]]))
+  df.this_subject_data$subject_id = str_split(filename, '\\.', simplify=T)[1, 1] 
+  df.graph_trials = bind_rows(df.graph_trials, df.this_subject_data)
+}
+```
+
+```{r}
+df.graph_trials = df.graph_trials %>%
+  rowwise() %>%
+  mutate(target = ifelse(graph_trial_type == 'letter', 
+                         list(nodes_to_keys[[trajectory+1]]),
+                         list(nodes_to_keys[[trajectory+1]]))) %>%
+  ungroup() %>%
+  mutate(correct = map_int(keypresses, length) == map_int(target, length))
+```
+
+# assess performance by subject
+
+```{r}
+df.bonuses = df.graph_trials %>%
+  group_by(subject_id) %>%
+  summarize(pct_correct = mean(correct)) %>%
+  mutate(bonus = pct_correct >= 0.9) %>%
+  separate(subject_id, c("subject_id", "submission_time"))
+
+df.bonuses
+```
+
