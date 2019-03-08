@@ -69,6 +69,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     var key_combo_trial_instructions = {
         type: "graph-trial",
         graph_trial_type: 'key_combination',
+        graph_name: 'instructions',
         preamble: 'First, we need to show you which key corresponds to each square. You will need to remember these keys during the experiment. Press the appropriate key to continue. If multiple squares light up, try to press the corresponding keys together. If you make an incorrect response, the squares will turn red until you correct it.',
         trajectory: [0, 1, 2, 3, 4, 5],
         nodes_to_keys: [[' '], ['H'], ['J'], ['K'], ['L'], [' ', 'K']],
@@ -96,6 +97,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     var A_trials = {
         type: "graph-trial",
         trajectory: walk_a,
+        graph_name: structure_a.name,
         graph_trial_type: trial_type_a,
         preamble: 'Press the indicated key(s) quickly and accurately. Remember that the',
         nodes_to_keys: key_combo_assignments //trial_type_a == 'letter' ? key_assignments : key_combo_assignments
@@ -120,6 +122,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     var B_trials = {
         type: "graph-trial",
         trajectory: walk_b,
+        graph_name: structure_a.name,
         graph_trial_type: trial_type_b,
         preamble: 'Type the displayed letter quickly and accurately.',
         nodes_to_keys: key_assignments //trial_type_b == 'letter' ? key_assignments : key_combo_assignments

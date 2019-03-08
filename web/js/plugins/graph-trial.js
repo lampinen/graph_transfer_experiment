@@ -25,6 +25,12 @@ jsPsych.plugins['graph-trial'] = (function() {
                 default: 'letter',
                 description: 'Type of trial (letter or key_combination).'
             },
+            graph_name: {
+                type: jsPsych.plugins.parameterType.STRING,
+                pretty_name: 'GraphName',
+                default: 'unspecified',
+                description: 'Graph from which trajectory was generated.'
+            },
             keyboard_type: {
                 type: jsPsych.plugins.parameterType.STRING,
                 pretty_name: 'KeyboardType',
@@ -330,6 +336,7 @@ jsPsych.plugins['graph-trial'] = (function() {
             var trial_data = {
                 "trajectory": trial.trajectory,
                 "graph_trial_type": trial.graph_trial_type,
+                "graph_name": trial.graph_name,
                 "nodes_to_keys": trial.nodes_to_keys,
                 "canvas_width": trial.canvas_width,
                 "canvas_height": trial.canvas_height,
