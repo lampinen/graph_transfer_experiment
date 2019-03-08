@@ -1,0 +1,105 @@
+---
+title: "Experiment 0 analysis"
+output: html_document
+---
+
+# libraries
+
+```{r}
+library(rjson)
+library(purrr)
+library(tidyverse)
+```
+
+# Load data
+
+```{r data loading}
+data_dir = "../anonymized_data/ex0"
+data_files = list.files(data_dir)
+
+df.graph_trials = data.frame()
+
+graph_trials_to_df = function(list_data) {
+  df = tibble::as_tibble(list_data[c("trial_type", "trial_index", "graph_trial_type", "trajectory", "keypresses", "keypress_rts", "keyups", "keyup_rts")])
+  df$nodes_to_keys = rep(list(list_data$nodes_to_keys), nrow(df))
+  return(df)
+}
+
+for (filename in data_files) {
+  list.this_subject_data = fromJSON(file=sprintf("%s/%s", data_dir, filename)) 
+  df.this_subject_data = graph_trials_to_df(list.this_subject_data[[5]]) %>%
+    bind_rows(graph_trials_to_df(list.this_subject_data[[7]]))
+  df.this_subject_data$subject_id = str_split(filename, '\\.', simplify=T)[1, 1] 
+  
+  df.graph_trials = bind_rows(df.graph_trials, df.this_subject_data)
+  
+}
+```
+
+## Load graph structures
+
+```{r graph loading}
+three_rooms_adjacency = as.matrix(read_csv('auxiliary_data/tr_adjacency.csv', col_names=F))
+fixed_random_adjacency = as.matrix(read_csv('auxiliary_data/rand_adjacency.csv', col_names=F))
+```
+
+# data wrangling
+```{r}
+TODO: remove
+df.graph_trials$graph_name = NA
+```
+
+fix for missing condition info in some participants
+```{r}
+
+lookup_graph_name = function(subject_id, graph_trial_type) {
+  # TODO: fix when full data are downloaded
+  condition = case_when(subject_id == "1" ~ "d",
+                        subject_id == "2" ~ "b",
+                        T ~ "NA")
+  
+  name = case_when(condition == "a" & graph_trial_type == "key_combination" ~ "three_rooms", 
+                   condition == "a" & graph_trial_type == "letter" ~ "fixed_random_graph_0",  
+                   condition == "b" & graph_trial_type == "key_combination" ~ "three_rooms", 
+                   condition == "b" & graph_trial_type == "letter" ~ "three_rooms",  
+                   condition == "c" & graph_trial_type == "key_combination" ~ "fixed_random_graph_0", 
+                   condition == "c" & graph_trial_type == "letter" ~ "fixed_random_graph_0",  
+                   condition == "d" & graph_trial_type == "key_combination" ~ "fixed_random_graph_0", 
+                   condition == "d" & graph_trial_type == "letter" ~ "three_rooms",  
+                   T ~ "NA")
+  
+  return(name)
+}
+
+df.graph_trials = df.graph_trials %>%
+  mutate(graph_name = ifelse(is.na(graph_name), 
+                             lookup_graph_name(subject_id, graph_trial_type),
+                             graph_name)) 
+
+any(df.graph_trials$graph_name == "NA" | is.na(df.graph_trials$graph_name))
+```
+
+```{r marking correct}
+df.graph_trials = df.graph_trials %>%
+  rowwise() %>%
+  mutate(target = ifelse(graph_trial_type == 'letter', 
+                         list(nodes_to_keys[[trajectory+1]]),
+                         list(nodes_to_keys[[trajectory+1]]))) %>%
+  ungroup() %>%
+  mutate(correct = map_int(keypresses, length) == map_int(target, length))
+```
+
+```{r transition random or within graph}
+df.graph_trials = df.graph_trials %>%
+  rename(current_node=trajectory) %>%
+  mutate(current_node = current_node + 1, # easier for 1-based indexing in R
+         previous_node = lag(current_node, 1)) %>%
+  rowwise() %>%
+   mutate(transition_in_graph = case_when(graph_name == "three_rooms" ~ three_rooms_adjacency[previous_node, current_node] == 1,
+                                         graph_name == "fixed_random_graph_0" ~ fixed_random_adjacency[previous_node, current_node] == 1,
+                                         T ~ NA)) %>%
+  ungroup() %>%
+  group_by(subject_id, graph_trial_type, graph_name) %>%
+  summarize(transition_frequency = mean(transition_in_graph, na.rm=T))
+```
+
