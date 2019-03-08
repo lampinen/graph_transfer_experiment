@@ -98,8 +98,32 @@ df.graph_trials = df.graph_trials %>%
    mutate(transition_in_graph = case_when(graph_name == "three_rooms" ~ three_rooms_adjacency[previous_node, current_node] == 1,
                                          graph_name == "fixed_random_graph_0" ~ fixed_random_adjacency[previous_node, current_node] == 1,
                                          T ~ NA)) %>%
+  ungroup()
+```
+
+there are complex issues about what is a first RT on incorrect key-combination trials -- should we interpret the first key-press as part of a two-key combination or not?
+
+```{r first RT}
+df.graph_trials = df.graph_trials %>%
+  rowwise() %>%
+  mutate(first_response_RT = case_when(trial_type == "letter" ~ keypress_rts[1],
+                              length(target) == 1 ~ keypress_rts[1],
+                              length(target) == 2 ~ keypress_rts[2],
+                              T ~ as.double(NA))) %>%
+  ungroup()
+```
+
+# basic RT difference
+```{r}
+df.graph_trials %>%
+  group_by(subject_id, graph_trial_type, transition_in_graph, correct) %>%
+  summarize(mean_fRT = mean(first_response_RT),
+            sd_fRT = sd(first_response_RT)) %>%
   ungroup() %>%
-  group_by(subject_id, graph_trial_type, graph_name) %>%
-  summarize(transition_frequency = mean(transition_in_graph, na.rm=T))
+  group_by(graph_trial_type, transition_in_graph, correct) %>%
+  summarize(mean_mean_fRT = mean(mean_fRT),
+            sd_mean_fRT = sd(mean_fRT)) %>%
+  ungroup()
+  
 ```
 
