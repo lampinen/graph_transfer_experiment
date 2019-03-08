@@ -14,7 +14,8 @@ library(tidyverse)
 # Load data
 
 ```{r}
-data_dir = "../raw_data/pilot"
+data_dir = "../raw_data/ex0"
+cosub_parent_dir = "../mturk/ex0"
 data_files = list.files(data_dir)
 
 df.graph_trials = data.frame()
@@ -53,6 +54,23 @@ df.bonuses = df.graph_trials %>%
   mutate(bonus = pct_correct >= 0.9) %>%
   separate(subject_id, c("subject_id", "submission_time"))
 
+```
+
+```{r}
+df.assignments = tibble()
+for (res_file in Sys.glob(paste(cosub_parent_dir, '/*/production-results/*.json', sep=""))) {
+  assignment_id = res_file %>%
+    basename() %>%
+    str_sub(0, -6) # remove .json
+  this_result = RJSONIO::fromJSON(res_file) # for some reason rjson seems to have a bug???
+  df.assignments = bind_rows(df.assignments,
+                             tibble(subject_id=this_result$WorkerId, 
+                                    assignment_id=assignment_id))
+}
+```
+
+```{r}
+df.bonuses = left_join(df.bonuses, df.assignments)
 df.bonuses
 ```
 
