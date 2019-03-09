@@ -62,7 +62,7 @@ for (res_file in Sys.glob(paste(cosub_parent_dir, '/*/production-results/*.json'
   assignment_id = res_file %>%
     basename() %>%
     str_sub(0, -6) # remove .json
-  this_result = fromJSON(file=res_file) # for some reason rjson seems to have a bug??? Or at least has issues with these files
+  this_result = fromJSON(file=res_file) 
   df.assignments = bind_rows(df.assignments,
                              tibble(subject_id=this_result$WorkerId, 
                                     res_file=res_file,
@@ -72,11 +72,34 @@ for (res_file in Sys.glob(paste(cosub_parent_dir, '/*/production-results/*.json'
 
 ```{r}
 df.bonuses_full = left_join(df.bonuses_full, df.assignments) %>% 
-  mutate(bonus_amount = 2.00)
+  mutate(bonus_amount = 2.00) %>%
+  mutate(batch_num = map_chr(res_file, function(x) {str_split(x, "/")[[1]][4]}),
+         condition = str_extract(batch_num, "[bcd]"),
+         condition = ifelse(is.na(condition), 'a', condition)) 
 df.bonuses_full
 ```
 ```{r}
 df.bonuses = df.bonuses_full %>%
   filter(bonus)
+```
+
+# fixing stupid mistakes
+
+```{r}
+df_dictionary = read_csv(paste(data_dir, '/dictionary.csv', sep="")) %>%
+  rename(numeric_subj_id = `index\\n`) %>%
+  separate(filename, c("subject_id", "submission_time", "extension"))
+```
+```{r}
+df_fix = df.bonuses_full %>% 
+  left_join(df_dictionary)
+```
+
+```{r}
+df_fix = df_fix %>%
+  mutate(code = sprintf('"%i" ~ "%s"', numeric_subj_id, condition))
+write_csv(df_fix %>%
+            select(code),
+          "../anonymized_data/ex0/subj_conds.csv")
 ```
 

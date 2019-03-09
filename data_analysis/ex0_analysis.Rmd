@@ -65,11 +65,46 @@ df_graph_trials %>%
   unique()
 
 lookup_graph_name = function(subject_id, graph_trial_type) {
-  # TODO: fix when full data are downloaded
-  condition = case_when(subject_id == "9" ~ "d",
-                        subject_id == "34" ~ "b",
+  condition = case_when(subject_id == "1" ~ "b",
+                        subject_id == "2" ~ "c",
+                        subject_id == "3" ~ "c",
+                        subject_id == "4" ~ "b",
+                        subject_id == "5" ~ "a",
+                        subject_id == "6" ~ "b",
+                        subject_id == "7" ~ "d",
+                        subject_id == "8" ~ "a",
+                        subject_id == "9" ~ "d",
+                        subject_id == "10" ~ "b",
+                        subject_id == "11" ~ "c",
+                        subject_id == "12" ~ "d",
+                        subject_id == "13" ~ "d",
+                        subject_id == "14" ~ "d",
+                        subject_id == "15" ~ "a",
+                        subject_id == "16" ~ "c",
+                        subject_id == "17" ~ "c",
+                        subject_id == "18" ~ "a",
+                        subject_id == "19" ~ "a",
+                        subject_id == "20" ~ "c",
+                        subject_id == "21" ~ "a",
                         subject_id == "22" ~ "c",
+                        subject_id == "23" ~ "d",
+                        subject_id == "24" ~ "c",
                         subject_id == "25" ~ "d",
+                        subject_id == "26" ~ "b",
+                        subject_id == "27" ~ "b",
+                        subject_id == "28" ~ "d",
+                        subject_id == "29" ~ "a",
+                        subject_id == "30" ~ "c",
+                        subject_id == "31" ~ "a",
+                        subject_id == "32" ~ "a",
+                        subject_id == "33" ~ "d",
+                        subject_id == "34" ~ "b",
+                        subject_id == "35" ~ "d",
+                        subject_id == "36" ~ "b",
+                        subject_id == "37" ~ "b",
+                        subject_id == "38" ~ "b",
+                        subject_id == "39" ~ "a",
+                        subject_id == "40" ~ "c",
                         T ~ "NA")
   
   name = case_when(condition == "a" & graph_trial_type == "key_combination" ~ "three_rooms", 
@@ -86,11 +121,10 @@ lookup_graph_name = function(subject_id, graph_trial_type) {
 }
 
 df_graph_trials = df_graph_trials %>%
-  mutate(graph_name = ifelse(is.na(graph_name), 
-                             lookup_graph_name(subject_id, graph_trial_type),
-                             graph_name)) 
+  mutate(graph_name = lookup_graph_name(subject_id, graph_trial_type))
 
 any(df_graph_trials$graph_name == "NA" | is.na(df_graph_trials$graph_name))
+xtabs(~ graph_trial_type + graph_name + condition, df_graph_trials)
 ```
 
 ```{r}
@@ -177,13 +211,14 @@ df_subj_rt_summaries %>%
 ```{r}
 ggplot(df_subj_rt_summaries %>%
          filter(!is.na(transition_in_graph)), 
-       aes(x=transition_in_graph, y=mean_fRT, fill=transition_in_graph)) +
-  geom_bar(stat="summary",
+       aes(x=transition_in_graph, y=mean_fRT, color=transition_in_graph)) +
+  geom_point(stat="summary",
            fun.y="mean") +
   geom_errorbar(stat="summary",
                 fun.data="mean_cl_normal",
                 width=0.25) +
-   facet_grid(correct ~ graph_trial_type)
+   facet_grid(correct ~ graph_trial_type, scales="free_y")
+ggsave("results/plots/basic_learning_effect_RT_raw.png", width=4, height=6)
 ```
 
 ## difference scores
@@ -225,7 +260,29 @@ ggplot(df_subj_rt_summaries %>%
   geom_errorbar(stat="summary",
                 fun.data="mean_cl_normal") +
   facet_grid(transition_in_graph ~ graph_trial_type)
+
+
+ggsave("results/plots/isomorphic_effect_RT_raw.png", width=4, height=6)
 ```
+
+## isomorphic difference
+
+```{r}
+ggplot(df_subj_rt_diffs %>%
+         filter(correct),
+       aes(x=graph_name, y=rt_diff, fill=condition)) +
+  geom_bar(stat="summary",
+           fun.y="mean",
+           position="dodge") +
+  geom_errorbar(stat="summary",
+                fun.data="mean_cl_boot",
+                position=position_dodge(width=0.9),
+                width=0.25) +
+  facet_grid(~ graph_trial_type)
+
+ggsave("results/plots/transfer_effect_RT_diff.png", width=4, height=6)
+```
+
 
 # effects on % correct on first try
 
@@ -299,16 +356,17 @@ df_subj_corr_diffs = df_subj_corr_summaries %>%
 
 ```{r}
 ggplot(df_subj_corr_diffs,
-       aes(x=graph_name, y=corr_diff, fill=graph_trial_type)) +
+       aes(x=graph_name, y=corr_diff, fill=condition)) +
   geom_bar(stat="summary",
            fun.y="mean",
            position="dodge") +
   geom_errorbar(stat="summary",
                 fun.data="mean_cl_boot",
                 position=position_dodge(width=0.9),
-                width=0.25)
+                width=0.25) +
+  facet_grid(~ graph_trial_type)
 
-ggsave("results/plots/basic_learning_effect_corr.png", width=4, height=6)
+ggsave("results/plots/isomorphic_effect_corr.png", width=4, height=6)
 ```
 
 # correct model 
@@ -333,11 +391,11 @@ summary(corr_in_model)
 
 
 ```{r}
-# corr_full_model = glmer(correct ~ condition * graph_trial_type * transition_in_graph + graph_name  + target_combo + poly(time, 2) + (1 | subject_id) + (1 | target_str), 
-#                    family="binomial",
-#                    data=df_graph_trials %>%
-#                      filter(!is.na(transition_in_graph)))
-# summary(corr_full_model)
+corr_full_model = glmer(correct ~ condition * graph_trial_type * transition_in_graph + graph_name  + target_combo + poly(time, 2) + (1 | subject_id) + (1 | target_str), 
+                   family="binomial",
+                   data=df_graph_trials %>%
+                     filter(!is.na(transition_in_graph)))
+summary(corr_full_model)
 ```
 
 # rt proper analysis
