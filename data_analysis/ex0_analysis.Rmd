@@ -29,6 +29,11 @@ df_graph_trials = data.frame()
 graph_trials_to_df = function(list_data) {
   df = tibble::as_tibble(list_data[c("trial_type", "trial_index", "graph_trial_type", "trajectory", "keypresses", "keypress_rts", "keyups", "keyup_rts")])
   df$nodes_to_keys = rep(list(list_data$nodes_to_keys), nrow(df))
+  if ("graph_name" %in% names(list_data)) {
+    df$graph_name = list_data$graph_name
+  } else {
+    df$graph_name = NA
+  }
   return(df)
 }
 
@@ -51,17 +56,20 @@ fixed_random_adjacency = as.matrix(read_csv('auxiliary_data/rand_adjacency.csv',
 ```
 
 # data wrangling
-```{r}
-TODO: remove
-df_graph_trials$graph_name = NA
-```
-
 fix for missing condition info in some participants
 ```{r}
+# find subjects with missing info
+df_graph_trials %>% 
+  filter(is.na(graph_name)) %>% 
+  pull(subject_id) %>% 
+  unique()
+
 lookup_graph_name = function(subject_id, graph_trial_type) {
   # TODO: fix when full data are downloaded
-  condition = case_when(subject_id == "1" ~ "d",
-                        subject_id == "2" ~ "b",
+  condition = case_when(subject_id == "9" ~ "d",
+                        subject_id == "34" ~ "b",
+                        subject_id == "22" ~ "c",
+                        subject_id == "25" ~ "d",
                         T ~ "NA")
   
   name = case_when(condition == "a" & graph_trial_type == "key_combination" ~ "three_rooms", 
@@ -149,6 +157,7 @@ df_graph_trials = df_graph_trials %>%
 
 ```{r}
 df_subj_rt_summaries = df_graph_trials %>%
+  filter(first_response_RT < 2500) %>%
   group_by(subject_id, condition, graph_name, graph_trial_type, transition_in_graph, correct) %>%
   summarize(mean_fRT = mean(first_response_RT),
             sd_fRT = sd(first_response_RT)) %>%
@@ -172,8 +181,35 @@ ggplot(df_subj_rt_summaries %>%
   geom_bar(stat="summary",
            fun.y="mean") +
   geom_errorbar(stat="summary",
-                fun.y="mean_cl_normal") +
-  facet_grid(correct ~ graph_trial_type)
+                fun.data="mean_cl_normal",
+                width=0.25) +
+   facet_grid(correct ~ graph_trial_type)
+```
+
+## difference scores
+
+```{r}
+df_subj_rt_diffs = df_subj_rt_summaries %>%
+  select(-sd_fRT) %>%
+  filter(!is.na(transition_in_graph)) %>%
+  mutate(transition_in_graph = ifelse(transition_in_graph, "in_graph", "out_of_graph")) %>%
+  spread(transition_in_graph, mean_fRT) %>%
+  mutate(rt_diff = out_of_graph - in_graph)
+```
+
+```{r}
+ggplot(df_subj_rt_diffs %>%
+         filter(correct),
+       aes(x=graph_name, y=rt_diff, fill=graph_trial_type)) +
+  geom_bar(stat="summary",
+           fun.y="mean",
+           position="dodge") +
+  geom_errorbar(stat="summary",
+                fun.data="mean_cl_boot",
+                position=position_dodge(width=0.9),
+                width=0.25)
+
+ggsave("results/plots/basic_learning_effect_RT.png", width=4, height=6)
 ```
 
 ## isomorphic mean effect on RT?
@@ -187,7 +223,7 @@ ggplot(df_subj_rt_summaries %>%
   geom_bar(stat="summary",
            fun.y="mean") +
   geom_errorbar(stat="summary",
-                fun.y="mean_cl_normal") +
+                fun.data="mean_cl_normal") +
   facet_grid(transition_in_graph ~ graph_trial_type)
 ```
 
@@ -223,12 +259,112 @@ df_subj_corr_summaries %>%
 
 ```
 
-# rt proper models
+```{r}
+ggplot(df_subj_corr_summaries %>%
+         filter(!is.na(transition_in_graph)), 
+       aes(x=transition_in_graph, y=mean_correct, color=transition_in_graph)) +
+  geom_point(stat="summary",
+             fun.y="mean") +
+  geom_errorbar(stat="summary",
+                fun.data="mean_cl_boot") +
+  facet_grid(~ graph_trial_type) 
+
+ggsave("results/plots/basic_learning_effect_pct_correct.png", width=4, height=6)
+```
+
+```{r}
+ggplot(df_subj_corr_summaries %>%
+         filter(!is.na(transition_in_graph),
+                transition_in_graph), 
+       aes(x=condition, y=mean_correct, color=condition)) +
+  geom_point(stat="summary",
+             fun.y="mean") +
+  geom_errorbar(stat="summary",
+                fun.data="mean_cl_boot") +
+  facet_grid(graph_name ~ graph_trial_type) 
+
+ggsave("results/plots/transfer_effect_pct_correct.png", width=4, height=6)
+```
+
+## differences
+
+```{r}
+df_subj_corr_diffs = df_subj_corr_summaries %>%
+  select(-sd_correct) %>%
+  filter(!is.na(transition_in_graph)) %>%
+  mutate(transition_in_graph = ifelse(transition_in_graph, "in_graph", "out_of_graph")) %>%
+  spread(transition_in_graph, mean_correct) %>%
+  mutate(corr_diff = out_of_graph - in_graph)
+```
+
+```{r}
+ggplot(df_subj_corr_diffs,
+       aes(x=graph_name, y=corr_diff, fill=graph_trial_type)) +
+  geom_bar(stat="summary",
+           fun.y="mean",
+           position="dodge") +
+  geom_errorbar(stat="summary",
+                fun.data="mean_cl_boot",
+                position=position_dodge(width=0.9),
+                width=0.25)
+
+ggsave("results/plots/basic_learning_effect_corr.png", width=4, height=6)
+```
+
+# correct model 
+
+```{r}
+corr_out_model = glmer(correct ~ condition * graph_trial_type + graph_name  + target_combo + poly(time, 2) + (1 | subject_id) + (1 | target_str), 
+                   family="binomial",
+                   data=df_graph_trials %>%
+                     filter(!is.na(transition_in_graph),
+                            !transition_in_graph))
+summary(corr_out_model)
+```
+
+```{r}
+corr_in_model = glmer(correct ~ condition * graph_trial_type + graph_name  + target_combo + poly(time, 2) + (1 | subject_id) + (1 | target_str), 
+                   family="binomial",
+                   data=df_graph_trials %>%
+                     filter(!is.na(transition_in_graph),
+                            transition_in_graph))
+summary(corr_in_model)
+```
+
+
+```{r}
+# corr_full_model = glmer(correct ~ condition * graph_trial_type * transition_in_graph + graph_name  + target_combo + poly(time, 2) + (1 | subject_id) + (1 | target_str), 
+#                    family="binomial",
+#                    data=df_graph_trials %>%
+#                      filter(!is.na(transition_in_graph)))
+# summary(corr_full_model)
+```
+
+# rt proper analysis
+```{r}
+ggplot(df_graph_trials,
+       aes(x=first_response_RT)) +
+  geom_histogram() +
+  xlim(0, 5000)
+```
+
+```{r}
+ggplot(df_graph_trials %>% 
+         filter(correct,
+                first_response_RT < 5000),
+       aes(x=time, color=condition, linetype=transition_in_graph, y=first_response_RT)) +
+  geom_line(stat="summary",
+            fun.y="mean") +
+  facet_grid(graph_name ~ graph_trial_type)
+```
+
 
 ```{r}
 rt_model = lmer(first_response_RT ~ condition * graph_trial_type + graph_name + transition_in_graph + target_combo + poly(time, 2) + (1 + poly(time, 2) | subject_id) + (1 | target_str), 
                 data=df_graph_trials %>%
-                  filter(correct, !is.na(transition_in_graph)))
+                  filter(correct, 
+                         !is.na(transition_in_graph),
+                         first_response_RT < 5000))
 summary(rt_model)
 ```
 
