@@ -16,7 +16,7 @@ library(tidyverse)
 ```{r}
 data_dir = "../raw_data/ex0"
 cosub_parent_dir = "../mturk/ex0"
-data_files = list.files(data_dir)
+data_files = Sys.glob(paste(data_dir, '/*.json', sep=""))
 
 df.graph_trials = data.frame()
 
@@ -27,10 +27,10 @@ graph_trials_to_df = function(list_data) {
 }
 
 for (filename in data_files) {
-  list.this_subject_data = fromJSON(file=sprintf("%s/%s", data_dir, filename)) 
+  list.this_subject_data = fromJSON(file=filename)
   df.this_subject_data = graph_trials_to_df(list.this_subject_data[[5]]) %>%
     bind_rows(graph_trials_to_df(list.this_subject_data[[7]]))
-  df.this_subject_data$subject_id = str_split(filename, '\\.', simplify=T)[1, 1] 
+  df.this_subject_data$subject_id = str_split(basename(filename), '\\.', simplify=T)[1, 1] 
   df.graph_trials = bind_rows(df.graph_trials, df.this_subject_data)
 }
 ```
@@ -48,10 +48,10 @@ df.graph_trials = df.graph_trials %>%
 # assess performance by subject
 
 ```{r}
-df.bonuses = df.graph_trials %>%
+df.bonuses_full = df.graph_trials %>%
   group_by(subject_id) %>%
   summarize(pct_correct = mean(correct)) %>%
-  mutate(bonus = pct_correct >= 0.9) %>%
+  mutate(bonus = pct_correct >= 0.88) %>% # being slightly lenient
   separate(subject_id, c("subject_id", "submission_time"))
 
 ```
@@ -62,15 +62,21 @@ for (res_file in Sys.glob(paste(cosub_parent_dir, '/*/production-results/*.json'
   assignment_id = res_file %>%
     basename() %>%
     str_sub(0, -6) # remove .json
-  this_result = RJSONIO::fromJSON(res_file) # for some reason rjson seems to have a bug???
+  this_result = fromJSON(file=res_file) # for some reason rjson seems to have a bug??? Or at least has issues with these files
   df.assignments = bind_rows(df.assignments,
                              tibble(subject_id=this_result$WorkerId, 
+                                    res_file=res_file,
                                     assignment_id=assignment_id))
 }
 ```
 
 ```{r}
-df.bonuses = left_join(df.bonuses, df.assignments)
-df.bonuses
+df.bonuses_full = left_join(df.bonuses_full, df.assignments) %>% 
+  mutate(bonus_amount = 2.00)
+df.bonuses_full
+```
+```{r}
+df.bonuses = df.bonuses_full %>%
+  filter(bonus)
 ```
 
