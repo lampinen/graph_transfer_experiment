@@ -24,7 +24,8 @@ theme_set(theme_classic())
 data_dir = "../anonymized_data/ex0"
 data_files = list.files(data_dir)
 
-df_graph_trials = data.frame()
+df_graph_trials = tibble()
+df_debrief_questions = tibble()
 
 graph_trials_to_df = function(list_data) {
   df = tibble::as_tibble(list_data[c("trial_type", "trial_index", "graph_trial_type", "trajectory", "keypresses", "keypress_rts", "keyups", "keyup_rts")])
@@ -37,13 +38,29 @@ graph_trials_to_df = function(list_data) {
   return(df)
 }
 
+debrief_to_df = function(list_subject_data){ 
+  df_qs = bind_rows(map(list_subject_data[c(10, 12, 13, 14)], tibble::as_tibble))
+  df_dds = bind_rows(
+    tibble::as_tibble(list_subject_data[[9]][c("trial_type", "trial_index", "rt", "time_elapsed")]) %>%
+      mutate(assignments=list_subject_data[[9]]["assignments"]),
+    tibble::as_tibble(list_subject_data[[11]][c("trial_type", "trial_index", "rt", "time_elapsed")]) %>%
+      mutate(assignments=list_subject_data[[11]]["assignments"])
+  )
+  return(bind_rows(df_qs, df_dds))
+}
+
 for (filename in data_files) {
   list.this_subject_data = fromJSON(file=sprintf("%s/%s", data_dir, filename)) 
   df_this_subject_data = graph_trials_to_df(list.this_subject_data[[5]]) %>%
     bind_rows(graph_trials_to_df(list.this_subject_data[[7]]))
-  df_this_subject_data$subject_id = str_split(filename, '\\.', simplify=T)[1, 1] 
+  subject_id = str_split(filename, '\\.', simplify=T)[1, 1]
+  df_this_subject_data$subject_id = subject_id
+  
+  df_this_subject_debrief_data = debrief_to_df(list.this_subject_data)
+  df_this_subject_debrief_data$subject_id = subject_id
   
   df_graph_trials = bind_rows(df_graph_trials, df_this_subject_data)
+  df_debrief_questions = bind_rows(df_debrief_questions, df_this_subject_debrief_data)
   
 }
 ```
@@ -167,6 +184,17 @@ df_graph_trials = df_graph_trials %>%
   ungroup()
 ```
 
+```{r transitions_nominal_check}
+df_graph_trials %>% 
+  group_by(subject_id, graph_trial_type, graph_name) %>%
+  summarize(pct_tig = mean(transition_in_graph, na.rm=T)) %>%
+  ungroup() %>%
+  summarize(min_pct_tig = min(pct_tig),
+            max_pct_tig = max(pct_tig),
+            mean_pct_tig = mean(pct_tig),
+            sd_pct_tig = sd(pct_tig))
+```
+
 there are complex issues about what is a first RT on incorrect key-combination trials -- should we interpret the first key-press as part of a two-key combination or not?
 
 ```{r first RT}
@@ -186,6 +214,9 @@ df_graph_trials = df_graph_trials %>%
   mutate(target_str = map_chr(target, function(x) {paste(x, collapse="")}),
          target_combo = map_lgl(target, function(x) {length(x) > 1}))
 ```
+
+## debrief wrangling
+
 
 # basic RT differences
 
@@ -210,13 +241,16 @@ df_subj_rt_summaries %>%
 
 ```{r}
 ggplot(df_subj_rt_summaries %>%
-         filter(!is.na(transition_in_graph)), 
-       aes(x=transition_in_graph, y=mean_fRT, color=transition_in_graph)) +
+         filter(!is.na(transition_in_graph),
+                correct), 
+       aes(x=graph_name, y=mean_fRT, color=transition_in_graph)) +
   geom_point(stat="summary",
-           fun.y="mean") +
+           fun.y="mean",
+           position=position_dodge(width=0.8)) +
   geom_errorbar(stat="summary",
                 fun.data="mean_cl_normal",
-                width=0.25) +
+                width=0.25,
+                position=position_dodge(width=0.8)) +
    facet_grid(correct ~ graph_trial_type, scales="free_y")
 ggsave("results/plots/basic_learning_effect_RT_raw.png", width=4, height=6)
 ```
@@ -254,9 +288,9 @@ ggsave("results/plots/basic_learning_effect_RT.png", width=4, height=6)
 ggplot(df_subj_rt_summaries %>%
          filter(!is.na(transition_in_graph),
                 correct), 
-       aes(x=condition, y=mean_fRT, fill=condition)) +
-  geom_bar(stat="summary",
-           fun.y="mean") +
+       aes(x=condition, y=mean_fRT, color=condition)) +
+  geom_point(stat="summary",
+             fun.y="mean") +
   geom_errorbar(stat="summary",
                 fun.data="mean_cl_normal") +
   facet_grid(transition_in_graph ~ graph_trial_type)
@@ -411,9 +445,14 @@ ggplot(df_graph_trials %>%
          filter(correct,
                 first_response_RT < 5000),
        aes(x=time, color=condition, linetype=transition_in_graph, y=first_response_RT)) +
-  geom_line(stat="summary",
-            fun.y="mean") +
-  facet_grid(graph_name ~ graph_trial_type)
+  geom_smooth(method="lm",
+              formula="y ~ poly(x, 3)") +
+  # geom_line(stat="summary",
+  #           fun.y="mean") +
+  facet_grid(graph_name ~ graph_trial_type) +
+  labs(x = "Trial", y = "RT")
+
+#ggsave("results/plots/smoothed_RT_over_correct_trials.png")
 ```
 
 
@@ -425,4 +464,31 @@ rt_model = lmer(first_response_RT ~ condition * graph_trial_type + graph_name + 
                          first_response_RT < 5000))
 summary(rt_model)
 ```
+
+```{r}
+crazy_rt_model = lmer(first_response_RT ~ condition * graph_trial_type * poly(time, 2) + transition_in_graph + target_combo + (1 + poly(time, 2) | subject_id) + (1 | target_str), 
+                data=df_graph_trials %>%
+                  filter(correct, 
+                         !is.na(transition_in_graph),
+                         graph_name == "fixed_random_graph_0",
+                         first_response_RT < 5000))
+summary(crazy_rt_model)
+```
+
+# pct correct analysis
+
+```{r}
+ggplot(df_graph_trials,
+       aes(x=time, color=condition, linetype=transition_in_graph, y=as.numeric(correct))) +
+  geom_smooth(method="loess") +
+  facet_grid(graph_name ~ graph_trial_type) +
+  labs(x = "Trial", y = "% correct")
+
+ggsave("results/plots/smoothed_pct_correct_over_trials.png")
+```
+
+# debrief Qs
+
+
+## survey
 
