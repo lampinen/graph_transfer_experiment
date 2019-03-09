@@ -217,6 +217,22 @@ df_graph_trials = df_graph_trials %>%
 
 ## debrief wrangling
 
+```{r}
+df_debrief_questions = df_debrief_questions %>% 
+  mutate(label = case_when(trial_index == 8 ~ "drag_drop_free",
+                           trial_index == 9 ~ "which_structure",
+                           trial_index == 10 ~ "drag_drop_structure",
+                           trial_index == 11 ~ "did_you_notice_a_relationship",
+                           trial_index == 12 ~ "helpful_rating",
+                           trial_index == 13 ~ "which_condition"),
+         coded_response = case_when(label == "which_structure" ~ str_extract(responses, "three_rooms|fixed_random"),
+                                    label == "did_you_notice_a_relationship" ~ str_extract(responses, "Yes|No"),
+                                    label == "helpful_rating" ~ str_sub(responses, -2, -2),
+                                    label == "which_condition" ~ str_extract(responses, "Same|Different"),
+                                    T ~ "NA"))
+
+```
+
 
 # basic RT differences
 
@@ -489,6 +505,121 @@ ggsave("results/plots/smoothed_pct_correct_over_trials.png")
 
 # debrief Qs
 
+```{r}
+df_debrief_questions_joined = df_debrief_questions %>%
+  left_join(df_subj_corr_diffs %>%
+              filter(graph_trial_type == "letter") %>%
+              select(-in_graph, -out_of_graph)) %>%
+  left_join(df_subj_rt_diffs %>%
+              filter(graph_trial_type == "letter",
+                     correct) %>%
+              select(-in_graph, -out_of_graph, -correct))
+```
 
 ## survey
+
+```{r}
+df_debrief_questions_joined = df_debrief_questions_joined %>%
+  rowwise() %>%
+  mutate(scored_responses = case_when(
+    label == "which_structure" ~ grepl(coded_response, graph_name),
+    label == "did_you_notice_a_relationship" ~ coded_response == "Yes",
+    label == "which_condition" ~ (coded_response == "Same" & condition == "isomorphic") | (coded_response == "Different" & condition == "nonisomorphic"),
+    T ~ NA)) %>%
+  ungroup()
+```
+
+```{r}
+ggplot(df_debrief_questions_joined %>%
+         filter(label %in% c("which_structure", "which_condition")),
+       aes(x=condition, y=1*scored_responses, fill=condition)) +
+  geom_bar(stat="summary",
+           fun.y="mean") +
+  geom_errorbar(stat="summary",
+                fun.data="mean_cl_normal")+
+  facet_grid(graph_name ~ label)
+ggsave("results/plots/survey_which_scores.png", width=6, height=4)
+```
+
+```{r}
+which_structure_mod = glm(scored_responses ~ condition, 
+                          df_debrief_questions_joined %>%
+                            filter(label=="which_structure"),
+                          family="binomial")
+summary(which_structure_mod)
+```
+
+```{r}
+ggplot(df_debrief_questions_joined %>%
+         filter(label == "did_you_notice_a_relationship"),
+       aes(x=condition, y=1*scored_responses, fill=condition)) +
+  geom_bar(stat="summary",
+           fun.y="mean") +
+  geom_errorbar(stat="summary",
+                fun.data="mean_cl_normal") +
+  labs(y="% noticed a relationship between tasks")
+
+ggsave("results/plots/survey_did_you_notice.png", width=6, height=4)
+```
+
+## drag + drop on structure
+
+```{r}
+get_adjacency_pairs = function(assignments, graph_name) {
+  num_nodes = length(assignments)
+  if (graph_name == "three_rooms") {
+    adjacency_matrix = three_rooms_adjacency
+  } else {
+    adjacency_matrix = fixed_random_adjacency
+  }
+                            
+  adjacency_pairs = crossing(i=1:num_nodes, j=1:num_nodes) %>%
+    rowwise() %>%
+    mutate(in_graph = adjacency_matrix[i, j] == 1) %>%
+    ungroup() %>%
+    filter(in_graph)
+  
+  adjacency_pairs = adjacency_pairs %>%
+    mutate(str_pair = paste(assignments[i], assignments[j], sep=""))
+  return(adjacency_pairs %>% pull(str_pair))
+}
+
+score_dds_assignments = function(assignments, graph_name, nodes_to_keys) {
+  # get all adjacency pairs for assignments
+  assigned_adjacency_pairs = get_adjacency_pairs(assignments, graph_name)
+  # get all adjacency pairs for ground truth
+  ground_truth_adjacency_pairs = get_adjacency_pairs(nodes_to_keys, graph_name)
+  # count the overlap
+  overlap = mean(map_lgl(assigned_adjacency_pairs, function(x) {x %in% ground_truth_adjacency_pairs}))
+  return(overlap)
+}
+```
+
+```{r}
+df_d_d_structure = df_debrief_questions_joined %>%
+  filter(label == "drag_drop_structure") %>%
+  left_join(df_graph_trials %>% 
+              filter(graph_trial_type == "letter", time == 1) %>%
+              select(subject_id, nodes_to_keys)) %>%
+  rowwise() %>%
+  mutate(scored_assignments = score_dds_assignments(assignments, graph_name, nodes_to_keys))
+```
+
+```{r}
+ggplot(df_d_d_structure,
+       aes(x=graph_name, y=scored_assignments, fill=condition)) +
+  geom_bar(stat="summary",
+           fun.y="mean",
+           position="dodge") +
+  geom_errorbar(stat="summary",
+                fun.data="mean_cl_normal",
+                position=position_dodge(0.9)) +
+  labs(y="% assigned edges match")
+
+ggsave("results/drag_drop_assignment.png", width=6, height=4)
+```
+
+```{r}
+summary(lm(scored_assignments ~ condition, df_d_d_structure))
+```
 
