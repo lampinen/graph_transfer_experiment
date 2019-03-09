@@ -122,7 +122,7 @@ build_experiment = function(structure_a, structure_b, walk_length_a, walk_length
     var B_trials = {
         type: "graph-trial",
         trajectory: walk_b,
-        graph_name: structure_a.name,
+        graph_name: structure_b.name,
         graph_trial_type: trial_type_b,
         preamble: 'Type the displayed letter quickly and accurately.',
         nodes_to_keys: key_assignments //trial_type_b == 'letter' ? key_assignments : key_combo_assignments
