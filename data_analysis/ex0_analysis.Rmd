@@ -141,7 +141,6 @@ df_graph_trials = df_graph_trials %>%
   mutate(graph_name = lookup_graph_name(subject_id, graph_trial_type))
 
 any(df_graph_trials$graph_name == "NA" | is.na(df_graph_trials$graph_name))
-xtabs(~ graph_trial_type + graph_name + condition, df_graph_trials)
 ```
 
 ```{r}
@@ -158,6 +157,8 @@ df_graph_trials = df_graph_trials %>%
                             "isomorphic",
                             "nonisomorphic")) %>%
   ungroup()
+
+xtabs(~ graph_trial_type + graph_name + condition, df_graph_trials)
 ```
 
 
@@ -246,6 +247,17 @@ df_subj_rt_summaries = df_graph_trials %>%
   
 ```
 
+```{r}
+df_subj_middle_rt_summaries = df_graph_trials %>%
+  filter(first_response_RT < 2500,
+         time >= 500,
+         time <= 1000) %>%
+  group_by(subject_id, condition, graph_name, graph_trial_type, transition_in_graph, correct) %>%
+  summarize(mean_fRT = mean(first_response_RT),
+            sd_fRT = sd(first_response_RT)) %>%
+  ungroup() 
+  
+```
 ## learning effect?
 ```{r}
 df_subj_rt_summaries %>%
@@ -333,6 +345,29 @@ ggplot(df_subj_rt_diffs %>%
 ggsave("results/plots/transfer_effect_RT_diff.png", width=4, height=6)
 ```
 
+### middle
+```{r}
+df_subj_middle_rt_diffs = df_subj_middle_rt_summaries %>%
+  select(-sd_fRT) %>%
+  filter(!is.na(transition_in_graph)) %>%
+  mutate(transition_in_graph = ifelse(transition_in_graph, "in_graph", "out_of_graph")) %>%
+  spread(transition_in_graph, mean_fRT) %>%
+  mutate(rt_diff = out_of_graph - in_graph)
+```
+
+```{r}
+ggplot(df_subj_middle_rt_diffs %>%
+         filter(correct),
+       aes(x=graph_name, y=rt_diff, fill=condition)) +
+  geom_bar(stat="summary",
+           fun.y="mean",
+           position="dodge") +
+  geom_errorbar(stat="summary",
+                fun.data="mean_cl_boot",
+                position=position_dodge(width=0.9),
+                width=0.25) +
+  facet_grid(~ graph_trial_type)
+```
 
 # effects on % correct on first try
 
@@ -462,7 +497,22 @@ ggplot(df_graph_trials %>%
                 first_response_RT < 5000),
        aes(x=time, color=condition, linetype=transition_in_graph, y=first_response_RT)) +
   geom_smooth(method="lm",
-              formula="y ~ poly(x, 3)") +
+              formula="y ~ poly(x, 4)") +
+  # geom_line(stat="summary",
+  #           fun.y="mean") +
+  facet_wrap( ~ subject_id + graph_name + graph_trial_type) +
+  labs(x = "Trial", y = "RT")
+
+ggsave("results/plots/smoothed_RT_over_correct_trials_by_subject.png", width=20, height=20)
+```
+
+```{r}
+ggplot(df_graph_trials %>% 
+         filter(correct,
+                first_response_RT < 5000),
+       aes(x=time, color=condition, linetype=transition_in_graph, y=first_response_RT)) +
+  geom_smooth(method="lm",
+              formula="y ~ poly(x, 4)") +
   # geom_line(stat="summary",
   #           fun.y="mean") +
   facet_grid(graph_name ~ graph_trial_type) +
@@ -473,7 +523,7 @@ ggplot(df_graph_trials %>%
 
 
 ```{r}
-rt_model = lmer(first_response_RT ~ condition * graph_trial_type + graph_name + transition_in_graph + target_combo + poly(time, 2) + (1 + poly(time, 2) | subject_id) + (1 | target_str), 
+rt_model = lmer(log(first_response_RT) ~ condition * graph_trial_type + graph_name + transition_in_graph + target_combo + poly(log(time + 1), 2) + (1 + poly(log(time + 1), 2) | subject_id) + (1 | target_str), 
                 data=df_graph_trials %>%
                   filter(correct, 
                          !is.na(transition_in_graph),
@@ -482,13 +532,25 @@ summary(rt_model)
 ```
 
 ```{r}
-crazy_rt_model = lmer(first_response_RT ~ condition * graph_trial_type * poly(time, 2) + transition_in_graph + target_combo + (1 + poly(time, 2) | subject_id) + (1 | target_str), 
+in_graph_rt_model = lmer(first_response_RT ~ condition * graph_trial_type  + graph_name * log(time + 1) + target_combo + (1 + log(time + 1) | subject_id) + (1 | target_str), 
                 data=df_graph_trials %>%
                   filter(correct, 
                          !is.na(transition_in_graph),
-                         graph_name == "fixed_random_graph_0",
-                         first_response_RT < 5000))
-summary(crazy_rt_model)
+                         transition_in_graph,
+                         first_response_RT < 5000,
+                         first_response_RT > 100))
+summary(in_graph_rt_model)
+```
+
+```{r}
+in_graph_rt_model_2 = lmer(first_response_RT ~ condition * graph_trial_type  + graph_name * poly(log(time + 1), 2) + target_combo + (1 + poly(log(time + 1), 2) | subject_id) + (1 | target_str), 
+                data=df_graph_trials %>%
+                  filter(correct, 
+                         !is.na(transition_in_graph),
+                         transition_in_graph,
+                         first_response_RT < 5000,
+                         first_response_RT > 100))
+summary(in_graph_rt_model_2)
 ```
 
 # pct correct analysis
@@ -496,12 +558,34 @@ summary(crazy_rt_model)
 ```{r}
 ggplot(df_graph_trials,
        aes(x=time, color=condition, linetype=transition_in_graph, y=as.numeric(correct))) +
-  geom_smooth(method="loess") +
+  geom_smooth(method="lm",
+              formula="y ~ poly(x, 4)") +
   facet_grid(graph_name ~ graph_trial_type) +
   labs(x = "Trial", y = "% correct")
 
 ggsave("results/plots/smoothed_pct_correct_over_trials.png")
 ```
+
+
+```{r}
+in_graph_correct_model = glmer(correct ~ condition * graph_trial_type  + graph_name * scale(log(time + 1)) + target_combo + (1 +scale(log(time + 1)) | subject_id) + (1 | target_str), 
+                               family="binomial",
+                               data=df_graph_trials %>%
+                                 filter(!is.na(transition_in_graph),
+                                        transition_in_graph))
+summary(in_graph_correct_model)
+```
+
+```{r}
+out_of_graph_correct_model = glmer(correct ~ condition * graph_trial_type  + graph_name * scale(log(time + 1)) + target_combo + (1  | subject_id) + (1 | target_str), 
+                               family="binomial",
+                               data=df_graph_trials %>%
+                                 filter(!is.na(transition_in_graph),
+                                        !transition_in_graph),
+                               control=glmerControl(optimizer="bobyqa", optCtrl=list(maxfun=5e4)))
+summary(out_of_graph_correct_model)
+```
+
 
 # debrief Qs
 
