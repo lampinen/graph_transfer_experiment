@@ -13,7 +13,7 @@ library(tidyverse)
 # data loading
 
 ```{r message=FALSE, warning=TRUE}
-data_dir = "../modeling/results/"
+data_dir = "../modeling/results_recurrent/"
 
 files = Sys.glob(paste(data_dir, "*.csv", sep=""))
 
@@ -21,7 +21,8 @@ model_d = tibble()
 for (f in files) {
   filename = basename(f)
   g1 = str_extract(filename, '(?<=g1)[a-z0-9_]+(?=_g2)')
-  g2 = str_extract(filename, '(?<=g2)[a-z0-9_]+(?=_run)')
+  g2 = str_extract(filename, '(?<=g2)[a-z0-9_]+(?=_rs)')
+  rs = str_extract(filename, '(?<=rs)\\d+')
   run = str_extract(filename, '(?<=run)\\d+')
   this_d = read_csv(f) %>%
     mutate(g1 = g1, g2 = g2, run = run)
@@ -33,10 +34,10 @@ for (f in files) {
 
 ```{r}
 model_d = model_d %>%
-  mutate(learning_first = trial < max(trial)/2,
-         shifted_trial = ifelse(learning_first,
-                                trial,
-                                trial - max(trial)/2),
+  mutate(learning_first = step < max(step)/2,
+         shifted_step = ifelse(learning_first,
+                                step,
+                                step - max(step)/2),
          relevant_loss = ifelse(learning_first,
                                 loss1,
                                 loss2),
@@ -55,11 +56,12 @@ theme_set(theme_classic())
 
 ```{r}
 ggplot(model_d,
-       aes(x=shifted_trial, y=relevant_loss,
+       aes(x=shifted_step, y=relevant_loss,
            color=precursor)) +
   geom_line(stat="summary",
             fun.y="mean") +
   facet_wrap(~graph) 
+#ggsave("results/plots/modeling/minimal_transfer_single_step_prediction.png", width=7, height=5)
 ```
 
 

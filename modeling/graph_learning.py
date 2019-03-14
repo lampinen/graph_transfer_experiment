@@ -15,14 +15,14 @@ num_hidden = 30
 num_layers = 4
 num_runs = 20 
 learning_rate = 0.001
-num_steps = 25000
+num_steps = 24000
 epsilon = 0.1 # noise in random walk
-rec_steps = 5 # how many recurrent steps 
+rec_steps = 4 # how many recurrent steps 
 init_mult = 1.
 output_dir = "results_recurrent/" 
 save_every = 5
 batch_size = 1
-graphs = [three_rooms(), five_three_lattice(), ring(), fixed_random_graph()]
+graphs = [three_rooms(), fixed_random_graph()] # five_three_lattice(), ring(), 
 ###
 if not os.path.exists(os.path.dirname(output_dir)):
     os.makedirs(os.path.dirname(output_dir))
@@ -45,7 +45,7 @@ for run_i in xrange(num_runs):
         for g2 in graphs: 
             np.random.seed(run_i)
             tf.set_random_seed(run_i)
-            filename_prefix = "g1%s_g2%s_run%i" %(g1.name, g2.name, run_i)
+            filename_prefix = "g1%s_g2%s_rs%i_run%i" %(g1.name, g2.name, rec_steps, run_i)
             print("Now running %s" % filename_prefix)
             walk1  = noisy_random_walk(g1, num_steps, epsilon)
             walk2  = noisy_random_walk(g2, num_steps, epsilon)
