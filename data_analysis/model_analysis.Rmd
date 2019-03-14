@@ -1,0 +1,55 @@
+---
+title: "Model analysis"
+output: html_notebook
+---
+
+
+# Libraries
+
+```{r}
+library(tidyverse)
+```
+
+# data loading
+
+```{r message=FALSE, warning=TRUE}
+data_dir = "../modeling/results/"
+
+files = Sys.glob(paste(data_dir, "*.csv", sep=""))
+
+model_d = tibble()
+for (f in files) {
+  filename = basename(f)
+  g1 = str_extract(filename, '(?<=g1)[a-z0-9_]+(?=_g2)')
+  g2 = str_extract(filename, '(?<=g2)[a-z0-9_]+(?=_run)')
+  run = str_extract(filename, '(?<=run)\\d+')
+  this_d = read_csv(f) %>%
+    mutate(g1 = g1, g2 = g2, run = run)
+  model_d = bind_rows(model_d, this_d)
+}
+```
+
+## wrangling
+
+```{r}
+model_d = model_d %>%
+  mutate(learning_first = trial < max(trial)/2,
+         shifted_trial = ifelse(learning_first,
+                                trial,
+                                trial - max(trial)/2),
+         relevant_loss = ifelse(learning_first,
+                                loss1,
+                                loss2),
+         precursor = ifelse(learning_first,
+                            "none",
+                            g1),
+         graph = ifelse(learning_first,
+                        g1,
+                        g2))
+```
+
+
+
+
+
+
