@@ -48,8 +48,19 @@ model_d = model_d %>%
                         g2))
 ```
 
+# Graphs (lol)
+```{r}
+theme_set(theme_classic())
+```
 
-
+```{r}
+ggplot(model_d,
+       aes(x=shifted_trial, y=relevant_loss,
+           color=precursor)) +
+  geom_line(stat="summary",
+            fun.y="mean") +
+  facet_wrap(~graph) 
+```
 
 
 
