@@ -21,9 +21,24 @@ class graph(object):
         self.nodes = []
         self.edges = []
 
+    def get_full_dataset(self):
+        num_nodes = len(self.nodes)
+        x_data = []
+        y_data = []
+        for node_i, these_edges in enumerate(self.edges):
+            for node_j in these_edges:
+                this_x = np.zeros(num_nodes)
+                this_x[node_i] = 1.
+                x_data.append(this_x)
+                this_y = np.zeros(num_nodes)
+                this_y[node_j] = 1.
+                y_data.append(this_y)
+
+        return np.array(x_data), np.array(y_data)
+
 
 # 3 almost 5-cliques (structure of Schapiro et al.)
-class three_rooms():
+class three_rooms(graph):
     def __init__(self):
         num_nodes = 15
         self.name = "three_rooms"
@@ -87,7 +102,7 @@ class ring(graph):
 class random_graph(graph):
     def __init__(self, num_nodes=15, num_edges=30):
         min_deg = 2
-        self.name = "random_nodes_" + num_nodes + "_edges_" + num_edges
+        self.name = "random_nodes_%i_edges_%i" % (num_nodes, num_edges)
         self.nodes = range(num_nodes)
         self.edges = []
         for i in range(num_nodes):
@@ -96,15 +111,15 @@ class random_graph(graph):
 
         num_curr_edges = 0
         order = range(num_nodes) # Order of edge adding
-        shuffle(order)
+        np.random.shuffle(order)
         for ii in range(num_nodes): 
             i = order[ii] 
-            while (self.edges[i].length < 2):
+            while (len(self.edges[i]) < 2):
                 proposed_location = np.random.randint(num_nodes - 1)
                 if (proposed_location == i):
                     proposed_location = num_nodes - 1
                 
-                if (not self.edges[i].includes(proposed_location)):
+                if (not proposed_location in self.edges[i]):
                     self.edges[i].append(proposed_location)
                     self.edges[proposed_location].append(i)
                     num_curr_edges += 1
@@ -116,7 +131,7 @@ class random_graph(graph):
             if (proposed_location == i):
                 proposed_location = num_nodes - 1
             
-            if (not self.edges[i].includes(proposed_location)):
+            if (not proposed_location in self.edges[i]):
                 self.edges[i].append(proposed_location)
                 self.edges[proposed_location].append(i)
                 num_curr_edges += 1
@@ -124,7 +139,7 @@ class random_graph(graph):
 
 # A fixed graph generated using the above def
 # so we can have consistent results across subjects
-class fixed_random_graph():
+class fixed_random_graph(graph):
     def __init__(self):
         self.name = "fixed_random_graph_0"
         self.nodes = range(15)

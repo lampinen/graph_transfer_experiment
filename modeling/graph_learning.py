@@ -11,18 +11,19 @@ from graphs_and_walks import *
 ### Parameters
 num_input_per = 15
 num_output_per = 15
-num_hidden = 30
+num_hidden = 15
 num_layers = 4
-num_runs = 20 
-learning_rate = 0.001
-num_steps = 24000
+num_runs = 4 
+learning_rate = 0.005
+num_steps = 40000
+eval_steps = 500
 epsilon = 0.1 # noise in random walk
 rec_steps = 4 # how many recurrent steps 
-init_mult = 1.
-output_dir = "results_recurrent/" 
-save_every = 5
+init_mult = 0.5
+output_dir = "results_recurrent_small_weights_2/" 
+save_every = 200
 batch_size = 1
-graphs = [three_rooms(), fixed_random_graph()] # five_three_lattice(), ring(), 
+graphs = [three_rooms(), five_three_lattice(), ring(), fixed_random_graph(), random_graph()] # five_three_lattice(), ring(), 
 ###
 if not os.path.exists(os.path.dirname(output_dir)):
     os.makedirs(os.path.dirname(output_dir))
@@ -48,7 +49,9 @@ for run_i in xrange(num_runs):
             filename_prefix = "g1%s_g2%s_rs%i_run%i" %(g1.name, g2.name, rec_steps, run_i)
             print("Now running %s" % filename_prefix)
             walk1  = noisy_random_walk(g1, num_steps, epsilon)
+            eval_walk1 = noisy_random_walk(g1, eval_steps + rec_steps, epsilon)
             walk2  = noisy_random_walk(g2, num_steps, epsilon)
+            eval_walk2 = noisy_random_walk(g2, eval_steps + rec_steps, epsilon)
 
             x1_data, y1_data = g1.get_full_dataset()
             x2_data, y2_data = g2.get_full_dataset()
@@ -69,7 +72,8 @@ for run_i in xrange(num_runs):
             eval_target_ph = tf.placeholder(tf.float32, shape=[None, 2*num_input_per])
 
             with tf.variable_scope('lstm') as scope:
-                cells = [tf.nn.rnn_cell.LSTMCell(num_hidden) for _ in range(num_layers - 1)]
+                cells = [tf.nn.rnn_cell.LSTMCell(
+                    num_hidden, initializer=var_scale_init) for _ in range(num_layers - 1)]
                 stacked_lstm = tf.nn.rnn_cell.MultiRNNCell(cells)
 
                 W = tf.get_variable('Wo', shape=[num_hidden, 2*num_output_per], initializer=var_scale_init)
@@ -84,21 +88,16 @@ for run_i in xrange(num_runs):
                     lstm_output.append(this_output)
                 lstm_output = tf.stack(lstm_output, 1)
 
-                # eval on single step predictions on entire ground-truth dataset
-                eval_state = stacked_lstm.zero_state(tf.shape(eval_input_ph)[0], tf.float32)
-                this_final_hidden, eval_state = stacked_lstm(eval_input_ph, eval_state)
-                eval_output = tf.matmul(this_final_hidden, W) + b
-
             target = input_ph[:, 1:, :] # next step prediction
             first_domain_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=lstm_output[:, :, :num_output_per], labels=target[:, :, :num_output_per]))
             second_domain_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=lstm_output[:, :, num_output_per:], labels=target[:, :, num_output_per:]))
 
-            blah = tf.nn.softmax_cross_entropy_with_logits(logits=eval_output[:, :num_output_per], labels=eval_target_ph[:, :num_output_per])
-            first_domain_eval_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=eval_output[:, :num_output_per], labels=eval_target_ph[:, :num_output_per]))
-            second_domain_eval_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=eval_output[:, num_output_per:], labels=eval_target_ph[:, num_output_per:]))
+            # eval only on last-step prediction (i.e. full context)
+            first_domain_eval_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=lstm_output[:, -1, :num_output_per], labels=target[:, -1, :num_output_per]))
+            second_domain_eval_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=lstm_output[:, -1, num_output_per:], labels=target[:, -1, num_output_per:]))
 
             total_loss = first_domain_loss + second_domain_loss
-            optimizer = tf.train.AdamOptimizer(learning_rate)
+            optimizer = tf.train.RMSPropOptimizer(learning_rate)
             train = optimizer.minimize(total_loss)	
             g1_train = optimizer.minimize(first_domain_loss)
             g2_train = optimizer.minimize(second_domain_loss)
@@ -123,12 +122,17 @@ for run_i in xrange(num_runs):
 
 
                 def evaluate():
-                    curr_loss1 = sess.run(first_domain_eval_loss, feed_dict={eval_input_ph: g1_x_data, eval_target_ph: g1_y_data})
-                    curr_loss2 = sess.run(second_domain_eval_loss, feed_dict={eval_input_ph: g2_x_data, eval_target_ph: g2_y_data})
-#                    if verbose:
-#                        this_input = np.stack([encode_one_hot(x, 1, num_input_per) for x in range(num_input_per)], axis=1)
-#                        print(sess.run(lstm_output, feed_dict={input_ph: this_input[:, :rec_steps+1, :]}))
-#                        print(sess.run(eval_output, feed_dict={eval_input_ph: this_input[0, :, :]}))
+                    curr_loss1 = 0.
+                    curr_loss2 = 0.
+                    for step_i in range(0, eval_steps):  
+                        this_input = [encode_one_hot(x, 1, num_input_per) for x in eval_walk1[step_i:step_i + rec_steps + 1]]
+                        this_input = np.stack(this_input, 1)
+                        curr_loss1 += sess.run(first_domain_eval_loss, feed_dict={input_ph: this_input})
+                        this_input = [encode_one_hot(x, 2, num_input_per) for x in eval_walk2[step_i:step_i + rec_steps + 1]]
+                        this_input = np.stack(this_input, 1)
+                        curr_loss2 += sess.run(second_domain_eval_loss, feed_dict={input_ph: this_input})
+                    curr_loss1 /= eval_steps
+                    curr_loss2 /= eval_steps
 
                     return curr_loss1, curr_loss2
 
