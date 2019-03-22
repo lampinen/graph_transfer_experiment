@@ -532,7 +532,7 @@ summary(rt_model)
 ```
 
 ```{r}
-in_graph_rt_model = lmer(first_response_RT ~ condition * graph_trial_type  + graph_name * log(time + 1) + target_combo + (1 + log(time + 1) | subject_id) + (1 | target_str), 
+in_graph_rt_model = lmer(first_response_RT ~ condition * graph_trial_type  + graph_name * log(time + 1) + target_combo + (1 + log(time + 1) * graph_name + graph_trial_type  + target_combo | subject_id) + (1 | target_str), 
                 data=df_graph_trials %>%
                   filter(correct, 
                          !is.na(transition_in_graph),
@@ -543,7 +543,7 @@ summary(in_graph_rt_model)
 ```
 
 ```{r}
-in_graph_rt_model_2 = lmer(first_response_RT ~ condition * graph_trial_type  + graph_name * poly(log(time + 1), 2) + target_combo + (1 + poly(log(time + 1), 2) | subject_id) + (1 | target_str), 
+in_graph_rt_model_2 = lmer(first_response_RT ~ condition * graph_trial_type  + graph_name * scale(log(time + 1)) + target_combo + (1 + scale(log(time + 1)) * graph_name  + graph_trial_type  + target_combo | subject_id) + (1 | target_str), 
                 data=df_graph_trials %>%
                   filter(correct, 
                          !is.na(transition_in_graph),
@@ -568,7 +568,7 @@ ggsave("results/plots/smoothed_pct_correct_over_trials.png")
 
 
 ```{r}
-in_graph_correct_model = glmer(correct ~ condition * graph_trial_type  + graph_name * scale(log(time + 1)) + target_combo + (1 +scale(log(time + 1)) | subject_id) + (1 | target_str), 
+in_graph_correct_model = glmer(correct ~ condition * graph_trial_type  + graph_name * scale(log(time + 1)) + target_combo + (1 + scale(log(time + 1))  + graph_trial_type | subject_id) + (1 | target_str), 
                                family="binomial",
                                data=df_graph_trials %>%
                                  filter(!is.na(transition_in_graph),
@@ -677,6 +677,34 @@ score_dds_assignments = function(assignments, graph_name, nodes_to_keys) {
   overlap = mean(map_lgl(assigned_adjacency_pairs, function(x) {x %in% ground_truth_adjacency_pairs}))
   return(overlap)
 }
+
+pairwise_distances = function(assignments) {
+  str_pairs = c()
+  distances = c()
+  for (i in 1:length(assignments)) {
+    for (j in 1:length(assignments)) {
+      if (i == j) {
+        next
+      }
+      
+      str_pair = paste(assignments[[i]]$label, assignments[[j]]$label, sep="")
+      distance = ((assignments[[i]]$position[1] - assignments[[j]]$position[1])^2 +
+        (assignments[[i]]$position[2] - assignments[[j]]$position[2])^2) %>% 
+        sqrt()
+      str_pairs = c(str_pairs, str_pair)
+      distances = c(distances, distance)
+    }
+  }
+  return(tibble(str_pair=str_pairs, distance=distances))
+}
+
+score_fdd_assignments = function(assignments, graph_name, nodes_to_keys) {
+  ground_truth_adjacency_pairs = get_adjacency_pairs(nodes_to_keys, graph_name)
+  pair_dists = pairwise_distances(assignments) %>%
+    mutate(edge_in_graph = str_pair %in% ground_truth_adjacency_pairs) 
+  t_stat = t.test(distance ~ edge_in_graph, pair_dists)$statistic
+  return(t_stat)
+}
 ```
 
 ```{r}
@@ -707,3 +735,20 @@ ggsave("results/drag_drop_assignment.png", width=6, height=4)
 summary(lm(scored_assignments ~ condition, df_d_d_structure))
 ```
 
+### drag + drop free
+
+```{r}
+df_d_d_free = df_debrief_questions_joined %>%
+  filter(label == "drag_drop_free") %>%
+  left_join(df_graph_trials %>% 
+              filter(graph_trial_type == "letter", time == 1) %>%
+              select(subject_id, nodes_to_keys)) %>%
+  rowwise() %>%
+  mutate(free_drag_t_stat = score_fdd_assignments(assignments, graph_name, nodes_to_keys))
+```
+
+```{r}
+ggplot(df_d_d_free,
+       aes(x=condition, color=condition, y=free_drag_t_stat)) +
+  geom_point(position=position_jitter(height=0))
+```
