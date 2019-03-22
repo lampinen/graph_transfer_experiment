@@ -13,14 +13,16 @@ num_input_per = 15
 num_output_per = 15
 num_hidden = 15
 num_layers = 4
-num_runs = 4 
+num_runs = 10 
+run_offset = 0
 learning_rate = 0.005
 num_steps = 40000
 eval_steps = 500
 epsilon = 0.1 # noise in random walk
 rec_steps = 4 # how many recurrent steps 
 init_mult = 0.5
-output_dir = "results_recurrent_small_weights_2/" 
+output_dir = "results_shared/" 
+input_shared = True
 save_every = 200
 batch_size = 1
 graphs = [three_rooms(), five_three_lattice(), ring(), fixed_random_graph(), random_graph()] # five_three_lattice(), ring(), 
@@ -41,7 +43,7 @@ p_o = 0.1 * 1./14
 optimal_loss = 4 * p_i * np.log(p_i) + 10 * p_o * np.log(p_o)
 print("optimal loss for three_rooms, etc.: %f" % optimal_loss)
 
-for run_i in xrange(num_runs):
+for run_i in xrange(run_offset, num_runs + run_offset):
     for g1 in graphs: 
         for g2 in graphs: 
             np.random.seed(run_i)
@@ -56,12 +58,17 @@ for run_i in xrange(num_runs):
             x1_data, y1_data = g1.get_full_dataset()
             x2_data, y2_data = g2.get_full_dataset()
             g1_x_data = np.concatenate([x1_data, np.zeros_like(x2_data)], axis=1)
-            g2_x_data = np.concatenate([np.zeros_like(x1_data), x2_data], axis=1)
+            g1_y_data = np.concatenate([y1_data, np.zeros_like(y2_data)], axis=1)
+            if input_shared:
+                x2_data = x2_data[:, np.random.permutation(num_input_per)]
+                g2_x_data = np.concatenate([x2_data, np.zeros_like(x2_data)], axis=1)
+                g2_y_data = np.concatenate([y2_data, np.zeros_like(y2_data)], axis=1)
+            else:
+                g2_x_data = np.concatenate([np.zeros_like(x1_data), x2_data], axis=1)
+                g2_y_data = np.concatenate([np.zeros_like(y1_data), y2_data], axis=1)
 
             x_data = np.concatenate([g1_x_data, g2_x_data], axis=0)
 
-            g1_y_data = np.concatenate([y1_data, np.zeros_like(y2_data)], axis=1)
-            g2_y_data = np.concatenate([np.zeros_like(y1_data), y2_data], axis=1)
             y_data = np.concatenate([g1_y_data, g2_y_data], axis=0)
 
             num_datapoints = len(x_data)
