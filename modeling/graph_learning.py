@@ -21,11 +21,11 @@ eval_steps = 500
 epsilon = 0.1 # noise in random walk
 rec_steps = 4 # how many recurrent steps 
 init_mult = 0.5
-output_dir = "results_shared/" 
+output_dir = "results_repeated_symbols_2/" 
 input_shared = True
 save_every = 200
 batch_size = 1
-graphs = [three_rooms(), five_three_lattice(), ring(), fixed_random_graph(), random_graph()] # five_three_lattice(), ring(), 
+graphs = [three_rooms(), fixed_random_graph(), five_three_lattice(), random_graph()] # five_three_lattice(), ring(), 
 ###
 if not os.path.exists(os.path.dirname(output_dir)):
     os.makedirs(os.path.dirname(output_dir))
@@ -33,9 +33,9 @@ if not os.path.exists(os.path.dirname(output_dir)):
 var_scale_init = tf.contrib.layers.variance_scaling_initializer(factor=init_mult, mode='FAN_AVG')
 nonlinearity = tf.nn.tanh
 
-def encode_one_hot(i, task, size=num_input_per):
+def encode_one_hot(i, task, symbols, size=num_input_per):
     res = np.zeros([1, 2*num_input_per])
-    res[0, i +  (task-1)*size] = 1.
+    res[0, symbols[i] +  (task-1)*size] = 1.
     return res
 
 p_i = 0.9 * 0.25 + 0.1 * 1./14
@@ -55,8 +55,12 @@ for run_i in xrange(run_offset, num_runs + run_offset):
             walk2  = noisy_random_walk(g2, num_steps, epsilon)
             eval_walk2 = noisy_random_walk(g2, eval_steps + rec_steps, epsilon)
 
+            symbols = range(num_input_per//2) + range((num_input_per + 1)//2)
+            np.random.shuffle(symbols)
+
             x1_data, y1_data = g1.get_full_dataset()
             x2_data, y2_data = g2.get_full_dataset()
+
             g1_x_data = np.concatenate([x1_data, np.zeros_like(x2_data)], axis=1)
             g1_y_data = np.concatenate([y1_data, np.zeros_like(y2_data)], axis=1)
             if input_shared:
@@ -109,7 +113,11 @@ for run_i in xrange(run_offset, num_runs + run_offset):
             g1_train = optimizer.minimize(first_domain_loss)
             g2_train = optimizer.minimize(second_domain_loss)
         
-            with tf.Session() as sess:
+
+            sess_config = tf.ConfigProto()
+            sess_config.gpu_options.allow_growth = True
+
+            with tf.Session(config=sess_config) as sess:
                 def train_task(task_num):   
                     global walk1, walk2
                     if task_num == 1:
@@ -119,7 +127,7 @@ for run_i in xrange(run_offset, num_runs + run_offset):
                         walk = walk2
                         train = g2_train
 
-                    this_input = [encode_one_hot(x, task_num, num_input_per) for x in walk[:rec_steps + 1]]
+                    this_input = [encode_one_hot(x, task_num, symbols, num_input_per) for x in walk[:rec_steps + 1]]
                     this_input = np.stack(this_input, 1)
                     sess.run(train, feed_dict={input_ph: this_input})
                     if task_num == 1:
@@ -132,10 +140,10 @@ for run_i in xrange(run_offset, num_runs + run_offset):
                     curr_loss1 = 0.
                     curr_loss2 = 0.
                     for step_i in range(0, eval_steps):  
-                        this_input = [encode_one_hot(x, 1, num_input_per) for x in eval_walk1[step_i:step_i + rec_steps + 1]]
+                        this_input = [encode_one_hot(x, 1, symbols, num_input_per) for x in eval_walk1[step_i:step_i + rec_steps + 1]]
                         this_input = np.stack(this_input, 1)
                         curr_loss1 += sess.run(first_domain_eval_loss, feed_dict={input_ph: this_input})
-                        this_input = [encode_one_hot(x, 2, num_input_per) for x in eval_walk2[step_i:step_i + rec_steps + 1]]
+                        this_input = [encode_one_hot(x, 2, symbols, num_input_per) for x in eval_walk2[step_i:step_i + rec_steps + 1]]
                         this_input = np.stack(this_input, 1)
                         curr_loss2 += sess.run(second_domain_eval_loss, feed_dict={input_ph: this_input})
                     curr_loss1 /= eval_steps

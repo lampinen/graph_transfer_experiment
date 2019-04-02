@@ -13,7 +13,7 @@ library(tidyverse)
 # data loading
 
 ```{r message=FALSE, warning=TRUE}
-data_dir = "../modeling/results_recurrent/"
+data_dir = "../modeling/results_repeated_symbols/"
 
 files = Sys.glob(paste(data_dir, "*.csv", sep=""))
 
@@ -61,7 +61,7 @@ ggplot(model_d,
   geom_line(stat="summary",
             fun.y="mean") +
   facet_wrap(~graph) 
-#ggsave("results/plots/modeling/minimal_transfer_single_step_prediction.png", width=7, height=5)
+#ggsave("results/plots/modeling/minimal_transfer_shared.png", width=7, height=5)
 ```
 
 
