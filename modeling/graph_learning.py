@@ -12,17 +12,18 @@ from graphs_and_walks import *
 num_input_per = 15
 num_output_per = 15
 num_hidden = 15
-num_layers = 4
+num_layers = 5 # will be n-2 lstm cells + input and output layer
 num_runs = 10 
 run_offset = 0
 learning_rate = 0.005
 num_steps = 40000
 eval_steps = 500
-epsilon = 0.1 # noise in random walk
+epsilon = 0.0 # noise in random walk
 rec_steps = 4 # how many recurrent steps 
 init_mult = 0.5
-output_dir = "results_repeated_symbols_2/" 
+output_dir = "results_frozen/" 
 input_shared = True
+freeze_weights = True # freeze all but input and output weights for second training stage
 save_every = 200
 batch_size = 1
 graphs = [three_rooms(), fixed_random_graph(), five_three_lattice(), random_graph()] # five_three_lattice(), ring(), 
@@ -82,18 +83,25 @@ for run_i in xrange(run_offset, num_runs + run_offset):
             eval_input_ph = tf.placeholder(tf.float32, shape=[None, 2*num_input_per])
             eval_target_ph = tf.placeholder(tf.float32, shape=[None, 2*num_input_per])
 
+            # input
             with tf.variable_scope('lstm') as scope:
                 cells = [tf.nn.rnn_cell.LSTMCell(
-                    num_hidden, initializer=var_scale_init) for _ in range(num_layers - 1)]
+                    num_hidden, initializer=var_scale_init) for _ in range(num_layers - 2)]
                 stacked_lstm = tf.nn.rnn_cell.MultiRNNCell(cells)
 
-                W = tf.get_variable('Wo', shape=[num_hidden, 2*num_output_per], initializer=var_scale_init)
-                b = tf.get_variable('Bo', shape=[2*num_output_per,], initializer=tf.zeros_initializer)
+                with tf.variable_scope('input'):
+                    Wi = tf.get_variable('Winput', shape=[2*num_input_per, num_hidden], initializer=var_scale_init)
+                    bi = tf.get_variable('Binput', shape=[num_hidden,], initializer=tf.zeros_initializer)
+
+                with tf.variable_scope('output'):
+                    W = tf.get_variable('Woutput', shape=[num_hidden, 2*num_output_per], initializer=var_scale_init)
+                    b = tf.get_variable('Boutput', shape=[2*num_output_per,], initializer=tf.zeros_initializer)
 
                 state = stacked_lstm.zero_state(tf.shape(input_ph)[0], tf.float32)
                 lstm_output = []
                 for t in range(rec_steps): 
-                    this_final_hidden, state = stacked_lstm(input_ph[:, t, :], state)
+                    processed_input = nonlinearity(tf.matmul(input_ph[:, t, :], Wi) + bi)
+                    this_final_hidden, state = stacked_lstm(processed_input, state)
                     scope.reuse_variables()
                     this_output = tf.matmul(this_final_hidden, W) + b
                     lstm_output.append(this_output)
@@ -107,11 +115,16 @@ for run_i in xrange(run_offset, num_runs + run_offset):
             first_domain_eval_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=lstm_output[:, -1, :num_output_per], labels=target[:, -1, :num_output_per]))
             second_domain_eval_loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(logits=lstm_output[:, -1, num_output_per:], labels=target[:, -1, num_output_per:]))
 
+            # train only input and output weights
+            all_vars = tf.trainable_variables()
+            in_n_out_vars = [v for v in all_vars if 'lstm/input' in v.name or 'lstm/output' in v.name]
+
             total_loss = first_domain_loss + second_domain_loss
             optimizer = tf.train.RMSPropOptimizer(learning_rate)
             train = optimizer.minimize(total_loss)	
             g1_train = optimizer.minimize(first_domain_loss)
-            g2_train = optimizer.minimize(second_domain_loss)
+            g2_train = optimizer.minimize(second_domain_loss,
+                                          var_list=in_n_out_vars if freeze_weights else None)
         
 
             sess_config = tf.ConfigProto()
